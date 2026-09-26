@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { registerSchema } from "@/lib/validations/auth";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
-
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const body = await req.json();
+    
+    // Strict schema validation
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
+
+    const { name, email, password } = parsed.data;
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { name }] }
@@ -20,7 +25,6 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Explicitly set role to 'STUDENT' so it registers on the Admin dashboard
     const user = await prisma.user.create({
       data: {
         name,
