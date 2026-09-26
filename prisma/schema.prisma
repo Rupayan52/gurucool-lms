@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum PlanType {
+  FREE
+  PAID_DIGITAL
+  OFFLINE_BATCH 
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String
+  name            String
+  role            Role           @default(STUDENT)
+  className       String?        
+  learningStyle   String?        
+  createdAt       DateTime       @default(now())
+  
+  subscription    Subscription?
+  enrollments     Enrollment[]
+  quizScores      QuizScore[]
+}
+
+model Subscription {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  planType        PlanType  @default(FREE)
+  offlineBatchId  String?   
+  startDate       DateTime  @default(now())
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+}
+
+model CourseClass {
+  id        String    @id @default(uuid())
+  name      String    @unique 
+  subjects  Subject[]
+}
+
+model Subject {
+  id            String      @id @default(uuid())
+  name          String
+  courseClassId String
+  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
+  chapters      Chapter[]
+  enrollments   Enrollment[]
+}
+
+model Chapter {
+  id        String   @id @default(uuid())
+  name      String
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  lessons   Lesson[]
+  quizzes   Quiz[]
+}
+
+model Lesson {
+  id           String   @id @default(uuid())
+  title        String
+  videoUrl     String?
+  pdfUrl       String?
+  chapterId    String
+  chapter      Chapter  @relation(fields: [chapterId], references: [id])
+  orderIndex   Int      
+}
+
+model Quiz {
+  id        String      @id @default(uuid())
+  title     String
+  chapterId String
+  chapter   Chapter     @relation(fields: [chapterId], references: [id])
+  questions Json        
+  scores    QuizScore[]
+}
+
+model QuizScore {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  score       Int
+  completedAt DateTime @default(now()) 
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  progress  Int      @default(0) 
+}
