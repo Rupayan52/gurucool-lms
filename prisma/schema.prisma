@@ -52,7 +52,7 @@ model Subject {
   id            String      @id @default(uuid())
   name          String
   courseClassId String
-  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
+  courseClass   CourseClass @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
   chapters      Chapter[]
 }
 
@@ -60,7 +60,7 @@ model Chapter {
   id        String   @id @default(uuid())
   name      String
   subjectId String
-  subject   Subject  @relation(fields: [subjectId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   quizzes   Quiz[]
   lessons   Lesson[]
 }
@@ -69,26 +69,28 @@ model Lesson {
   id          String   @id @default(uuid())
   title       String
   chapterId   String
-  chapter     Chapter  @relation(fields: [chapterId], references: [id])
+  chapter     Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   orderIndex  Int
+  videoUrl    String?  // Restored
+  pdfUrl      String?  // Restored
 }
 
 model Quiz {
   id        String      @id @default(uuid())
   title     String
   chapterId String
-  chapter   Chapter     @relation(fields: [chapterId], references: [id])
+  chapter   Chapter     @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   questions Json
   scores    QuizScore[]
 }
 
 model QuizScore {
   id        String   @id @default(uuid())
-  userId    String   
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   score     Int
-  quiz      Quiz     @relation(fields: [quizId], references: [id])
   createdAt DateTime @default(now())
 }
 
