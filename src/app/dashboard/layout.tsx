@@ -1,5 +1,5 @@
-import AutoLogout from "@/components/AutoLogout";
 "use client";
+import AutoLogout from "@/components/AutoLogout";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
