@@ -45,11 +45,6 @@ model Subscription {
   isActive        Boolean   @default(true)
 }
 
-model CourseClass {
-  id        String    @id @default(uuid())
-  name      String    @unique 
-  subjects  Subject[]
-}
 
 model Subject {
   id            String      @id @default(uuid())
@@ -60,15 +55,6 @@ model Subject {
   enrollments   Enrollment[]
 }
 
-model Chapter {
-  id        String   @id @default(uuid())
-  name      String
-  subjectId String
-  subject   Subject  @relation(fields: [subjectId], references: [id])
-  lessons   Lesson[]
-  quizzes   Quiz[]
-}
-
 model Lesson {
   id           String   @id @default(uuid())
   title        String
@@ -77,25 +63,6 @@ model Lesson {
   chapterId    String
   chapter      Chapter  @relation(fields: [chapterId], references: [id])
   orderIndex   Int      
-}
-
-model Quiz {
-  id        String      @id @default(uuid())
-  title     String
-  chapterId String
-  chapter   Chapter     @relation(fields: [chapterId], references: [id])
-  questions Json        
-  scores    QuizScore[]
-}
-
-model QuizScore {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  quizId      String
-  quiz        Quiz     @relation(fields: [quizId], references: [id])
-  score       Int
-  completedAt DateTime @default(now()) 
 }
 
 model Enrollment {
@@ -111,14 +78,6 @@ model CourseClass {
   id        String    @id @default(uuid())
   name      String
   subjects  Subject[]
-}
-
-model Subject {
-  id            String      @id @default(uuid())
-  name          String
-  courseClassId String
-  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
-  chapters      Chapter[]
 }
 
 model Chapter {
