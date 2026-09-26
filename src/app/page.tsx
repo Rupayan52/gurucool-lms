@@ -33,7 +33,7 @@ export default function Home() {
             Student Login
           </Link>
           <Link 
-            href="/admin" 
+            href="/admin-login" 
             className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg text-lg"
           >
             Admin Control Center

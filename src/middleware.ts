@@ -2,26 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
-  // If anyone tries to access ANY page starting with /admin...
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    const basicAuth = req.headers.get('authorization');
+  // Only protect the internal admin routes, leave /admin-login open
+  if (req.nextUrl.pathname.startsWith('/admin') && !req.nextUrl.pathname.startsWith('/admin-login')) {
+    const token = req.cookies.get('admin_session');
     
-    if (basicAuth) {
-      const authValue = basicAuth.split(' ')[1];
-      const [user, pwd] = atob(authValue).split(':');
-      
-      // THE USERNAME IS 'admin' AND THE PASSWORD IS 'guru2026'
-      if (user === 'admin' && pwd === 'guru2026') {
-        return NextResponse.next();
-      }
+    // If they don't have the secure cookie, redirect to the custom login screen
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin-login', req.url));
     }
-    
-    // If they fail or haven't logged in, block them and ask for the password
-    return new NextResponse('Unauthorized access to GuruCool Control Center', {
-      status: 401,
-      headers: { 'WWW-Authenticate': 'Basic realm="Admin Control Center"' },
-    });
   }
   
   return NextResponse.next();
 }
+
+// Tell Next.js to only run this middleware on /admin routes
+export const config = {
+  matcher: ['/admin/:path*'],
+};
