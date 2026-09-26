@@ -1,77 +1,45 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
-}
-
-enum PlanType {
-  FREE
-  PAID_DIGITAL
-  OFFLINE_BATCH 
+generator client {
+  provider = "prisma-client-js"
 }
 
 model User {
-  id              String         @id @default(uuid())
-  email           String         @unique
-  passwordHash    String
-  name            String
-  role            Role           @default(STUDENT)
-  className       String?        
-  learningStyle   String?        
-  createdAt       DateTime       @default(now())
-  
-  subscription    Subscription?
-  enrollments     Enrollment[]
-  quizScores      QuizScore[]
+  id               String            @id @default(uuid())
+  name             String            @unique
+  email            String            @unique
+  passwordHash     String
+  role             String            @default("STUDENT")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  subscription     Subscription?
+  doubtTickets     DoubtTicket[]
+  enrollments      Enrollment[]
+  quizScores       QuizScore[]
+  deletionRequest  DeletionRequest?
 }
 
 model Subscription {
-  id              String    @id @default(uuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id])
-  planType        PlanType  @default(FREE)
-  offlineBatchId  String?   
-  startDate       DateTime  @default(now())
-  endDate         DateTime?
-  isActive        Boolean   @default(true)
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planType  String   @default("FREE")
+  isActive  Boolean  @default(true)
+  startDate DateTime @default(now())
+  endDate   DateTime
 }
 
-
-model Subject {
-  id            String      @id @default(uuid())
-  name          String
-  courseClassId String
-  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
-  chapters      Chapter[]
-  enrollments   Enrollment[]
-}
-
-model Lesson {
-  id           String   @id @default(uuid())
-  title        String
-  videoUrl     String?
-  pdfUrl       String?
-  chapterId    String
-  chapter      Chapter  @relation(fields: [chapterId], references: [id])
-  orderIndex   Int      
-}
-
-model Enrollment {
+model DoubtTicket {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  subjectId String
-  subject   Subject  @relation(fields: [subjectId], references: [id])
-  progress  Int      @default(0) 
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  question  String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
 }
 
 model CourseClass {
@@ -80,13 +48,29 @@ model CourseClass {
   subjects  Subject[]
 }
 
+model Subject {
+  id            String      @id @default(uuid())
+  name          String
+  courseClassId String
+  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
+  chapters      Chapter[]
+}
+
 model Chapter {
   id        String   @id @default(uuid())
   name      String
   subjectId String
   subject   Subject  @relation(fields: [subjectId], references: [id])
   quizzes   Quiz[]
-  lessons   Lesson[] // Added to resolve the Lesson relation error
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  chapterId   String
+  chapter     Chapter  @relation(fields: [chapterId], references: [id])
+  orderIndex  Int
 }
 
 model Quiz {
@@ -101,9 +85,24 @@ model Quiz {
 model QuizScore {
   id        String   @id @default(uuid())
   userId    String   
-  user      User     @relation(fields: [userId], references: [id]) // Added to resolve the User relation error
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   quizId    String
   score     Int
   quiz      Quiz     @relation(fields: [quizId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Enrollment {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String      @default("ACTIVE")
+}
+
+model DeletionRequest {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pin       String
   createdAt DateTime @default(now())
 }

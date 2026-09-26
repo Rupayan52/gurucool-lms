@@ -7,7 +7,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   const handleSignOut = () => {
-    // Basic sign out redirect
     router.push("/login");
   };
 
@@ -16,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "My Courses", href: "/dashboard/courses" },
     { name: "Assessments & Quizzes", href: "/dashboard/assessments" },
     { name: "Doubt Support", href: "/dashboard/support" },
+    { name: "Profile", href: "/dashboard/profile" },
   ];
 
   return (
@@ -26,9 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex-1 px-4 py-2 space-y-2">
           {navLinks.map((link) => {
-            // Check if the current URL exactly matches the link, or if we are inside a sub-route
             const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
-            
             return (
               <Link
                 key={link.name}
