@@ -106,3 +106,43 @@ model Enrollment {
   subject   Subject  @relation(fields: [subjectId], references: [id])
   progress  Int      @default(0) 
 }
+
+model CourseClass {
+  id        String    @id @default(uuid())
+  name      String
+  subjects  Subject[]
+}
+
+model Subject {
+  id            String      @id @default(uuid())
+  name          String
+  courseClassId String
+  courseClass   CourseClass @relation(fields: [courseClassId], references: [id])
+  chapters      Chapter[]
+}
+
+model Chapter {
+  id        String  @id @default(uuid())
+  name      String
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  quizzes   Quiz[]
+}
+
+model Quiz {
+  id        String      @id @default(uuid())
+  title     String
+  chapterId String
+  chapter   Chapter     @relation(fields: [chapterId], references: [id])
+  questions Json
+  scores    QuizScore[]
+}
+
+model QuizScore {
+  id        String   @id @default(uuid())
+  userId    String   
+  quizId    String
+  score     Int
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  createdAt DateTime @default(now())
+}
