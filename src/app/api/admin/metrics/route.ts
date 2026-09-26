@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const totalStudents = await prisma.user.count({ where: { role: 'STUDENT' } });
+    const activePaid = await prisma.subscription.count({ where: { planType: 'PAID_DIGITAL', isActive: true } });
+    const offlineBatches = await prisma.subscription.count({ where: { planType: 'OFFLINE_BATCH', isActive: true } });
+    
+    // Safely check if the model exists in the current Prisma Client instance
+    const pendingDoubts = prisma.doubtTicket 
+      ? await prisma.doubtTicket.count({ where: { status: 'PENDING' } }) 
+      : 0;
+    
+    const recentUsers = await prisma.user.findMany({
+      where: { role: 'STUDENT' },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { subscription: true }
+    });
+
+    const recentSignups = recentUsers.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      plan: user.subscription?.planType || 'FREE',
+      date: new Date(user.createdAt).toLocaleDateString()
+    }));
+
+    return NextResponse.json({
+      metrics: { totalStudents, activePaid, offlineBatches, pendingDoubts },
+      recentSignups
+    });
+  } catch (error) {
+    console.error("Admin API Error:", error);
+    return NextResponse.json({ error: "Failed to fetch metrics" }, { status: 500 });
+  }
+}
