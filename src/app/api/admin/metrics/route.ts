@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// THIS LINE FIXES THE ISSUE - It forces Next.js to fetch live data every single time
 export const dynamic = "force-dynamic"; 
 
 export async function GET() {
   try {
     const [totalStudents, activePaid, offlineBatches, pendingDoubts, recentUsers] = await Promise.all([
-      prisma.user.count({ where: { role: 'STUDENT' } }),
+      prisma.user.count(), // Count all users in the database
       prisma.subscription.count({ where: { planType: 'PAID_DIGITAL', isActive: true } }),
       prisma.subscription.count({ where: { planType: 'OFFLINE_BATCH', isActive: true } }),
       // @ts-ignore
       prisma.doubtTicket.count({ where: { status: 'PENDING' } }),
       prisma.user.findMany({
-        where: { role: 'STUDENT' },
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: { subscription: true }
