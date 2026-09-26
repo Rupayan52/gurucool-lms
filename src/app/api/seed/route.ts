@@ -1,60 +1,71 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
-export async function POST() {
+export async function GET() {
   try {
-    // Check if data already exists to prevent duplicates
-    const existing = await prisma.courseClass.findFirst();
-    if (existing) {
-      return NextResponse.json({ message: "Database already seeded!" });
+    // Check if admin exists, if not create one
+    const adminExists = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash("guru2026", 10);
+      await prisma.user.create({
+        data: {
+          name: "admin",
+          email: "admin@gurucool.com",
+          passwordHash: hashedPassword,
+          role: "ADMIN"
+        }
+      });
     }
 
-    // Create Class -> Subject -> Chapter -> Lesson hierarchy
-    await prisma.courseClass.create({
-      data: {
-        name: "Class 10",
-        subjects: {
-          create: [
-            {
-              name: "Physics",
-              chapters: {
-                create: [
-                  {
-                    name: "Light - Reflection and Refraction",
-                    lessons: {
-                      create: [
-                        { title: "Introduction to Optics", orderIndex: 1, videoUrl: "https://example.com/vid1" },
-                        { title: "Spherical Mirrors", orderIndex: 2, pdfUrl: "https://example.com/notes1.pdf" }
-                      ]
+    // Seed sample course data if empty
+    const classCount = await prisma.courseClass.count();
+    if (classCount === 0) {
+      await prisma.courseClass.create({
+        data: {
+          name: "Class 12 - Science",
+          subjects: {
+            create: [
+              {
+                name: "Physics",
+                chapters: {
+                  create: [
+                    {
+                      name: "Light & Optics",
+                      lessons: {
+                        create: [
+                          { title: "Introduction to Reflection", orderIndex: 1 },
+                          { title: "Refraction and Snell's Law", orderIndex: 2 }
+                        ]
+                      }
                     }
-                  }
-                ]
-              }
-            },
-            {
-              name: "Biology",
-              chapters: {
-                create: [
-                  {
-                    name: "Life Processes",
-                    lessons: {
-                      create: [
-                        { title: "Nutrition in Plants", orderIndex: 1 },
-                        { title: "Human Digestive System", orderIndex: 2 }
-                      ]
+                  ]
+                }
+              },
+              {
+                name: "Biology",
+                chapters: {
+                  create: [
+                    {
+                      name: "Cellular Respiration",
+                      lessons: {
+                        create: [
+                          { title: "Glycolysis and Krebs Cycle", orderIndex: 1 }
+                        ]
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
-    });
+      });
+    }
 
-    return NextResponse.json({ message: "Dummy curriculum injected successfully!" });
+    return NextResponse.json({ success: true, message: "Database seeded successfully!" });
   } catch (error) {
-    console.error("Seed error:", error);
+    console.error("Seeding error:", error);
     return NextResponse.json({ error: "Failed to seed database" }, { status: 500 });
   }
 }
