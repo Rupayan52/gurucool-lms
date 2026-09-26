@@ -2,52 +2,51 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { identifier, password } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
-    }
+    // Search the database for a user matching EITHER the email or the name (username)
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { name: identifier }
+        ]
+      }
+    });
 
-    // Locate the user
-    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Verify the password hash
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!isValidPassword) {
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Sign the JWT payload
+    // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, role: user.role, email: user.email },
+      { userId: user.id, role: user.role },
       process.env.JWT_SECRET || "fallback_secret",
       { expiresIn: "7d" }
     );
 
-    const response = NextResponse.json({ 
-      message: "Login successful", 
-      user: { id: user.id, name: user.name, email: user.email, role: user.role } 
-    }, { status: 200 });
-    
-    // Set the token securely in an HTTP-only cookie
-    response.cookies.set("auth_token", token, {
+    // Set secure HTTP-only cookie
+    const cookieStore = await cookies();
+    cookieStore.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
     });
 
-    return response;
-
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Login Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
