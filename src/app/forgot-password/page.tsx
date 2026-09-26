@@ -3,29 +3,33 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setMessage("");
 
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, password }),
+      body: JSON.stringify({ identifier, newPassword }),
     });
 
+    const data = await res.json();
+
     if (res.ok) {
-      router.push("/dashboard");
-      router.refresh();
+      setMessage("Password successfully updated! Redirecting to login...");
+      setTimeout(() => router.push("/login"), 2000);
     } else {
-      setError("Invalid credentials");
+      setError(data.error || "Failed to reset password");
       setLoading(false);
     }
   };
@@ -34,8 +38,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 shadow-xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Welcome Back</h1>
-          <p className="text-slate-500 text-sm">Sign in to access your GuruCool dashboard</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Reset Password</h1>
+          <p className="text-slate-500 text-sm">Enter your email or username to update your password</p>
         </div>
 
         {error && (
@@ -44,7 +48,13 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        {message && (
+          <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 p-3 rounded-lg text-sm mb-6 text-center">
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <input
               type="text"
@@ -58,31 +68,25 @@ export default function LoginPage() {
           <div>
             <input
               type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               required
               className="w-full border border-slate-300 rounded-lg p-3 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             />
-            <div className="text-right mt-1">
-              <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
-                Forgot password?
-              </Link>
-            </div>
           </div>
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading ? "Updating..." : "Reset Password"}
           </button>
         </form>
 
         <div className="mt-8 text-center text-sm">
-          <span className="text-slate-500">Don't have an account? </span>
-          <Link href="/register" className="text-blue-600 font-semibold hover:underline">
-            Sign up
+          <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+            ← Back to Login
           </Link>
         </div>
       </div>
