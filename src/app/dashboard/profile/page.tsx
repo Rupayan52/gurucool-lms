@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [passMessage, setPassMessage] = useState("");
   const [passError, setPassError] = useState("");
   const [passLoading, setPassLoading] = useState(false);
+  const [securityLogs, setSecurityLogs] = useState<any[]>([]);
   
   const router = useRouter();
 
@@ -31,6 +32,7 @@ export default function ProfilePage() {
     if (res.ok) {
       const data = await res.json();
       setProfile(data);
+      fetch("/api/auth/security-logs").then(r => r.json()).then(l => setSecurityLogs(Array.isArray(l) ? l : []));
     }
   };
 
