@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(req: NextRequest) {
-  // Only protect the internal admin routes, leave /admin-login open
-  if (req.nextUrl.pathname.startsWith('/admin') && !req.nextUrl.pathname.startsWith('/admin-login')) {
-    const token = req.cookies.get('admin_session');
-    
-    // If they don't have the secure cookie, redirect to the custom login screen
-    if (!token) {
-      return NextResponse.redirect(new URL('/admin-login', req.url));
-    }
+export function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const isPublicPath = path === '/login' || path === '/register' || path === '/forgot-password';
+  const token = request.cookies.get('auth_token')?.value || '';
+
+  // Redirect authenticated users away from login/register pages
+  if (isPublicPath && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  
+
+  // Strictly protect dashboard and admin routes from unauthenticated access
+  if (!isPublicPath && !token && (path.startsWith('/dashboard') || path.startsWith('/admin'))) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   return NextResponse.next();
 }
 
-// Tell Next.js to only run this middleware on /admin routes
+// Apply proxy to all routes except API, static files, and images
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
