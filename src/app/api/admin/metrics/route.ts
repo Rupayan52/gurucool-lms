@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// THIS LINE FIXES THE ISSUE - It forces Next.js to fetch live data every single time
+export const dynamic = "force-dynamic"; 
+
 export async function GET() {
   try {
     const [totalStudents, activePaid, offlineBatches, pendingDoubts, recentUsers] = await Promise.all([
       prisma.user.count({ where: { role: 'STUDENT' } }),
       prisma.subscription.count({ where: { planType: 'PAID_DIGITAL', isActive: true } }),
       prisma.subscription.count({ where: { planType: 'OFFLINE_BATCH', isActive: true } }),
-      // @ts-ignore: Bypass Vercel's strict type-checker for dynamically generated Prisma models
+      // @ts-ignore
       prisma.doubtTicket.count({ where: { status: 'PENDING' } }),
       prisma.user.findMany({
         where: { role: 'STUDENT' },
@@ -17,7 +20,6 @@ export async function GET() {
       })
     ]);
 
-    // Explicitly type 'user' as 'any' to satisfy Vercel's strict TS configuration
     const recentSignups = recentUsers.map((user: any) => ({
       id: user.id,
       name: user.name,
@@ -31,7 +33,6 @@ export async function GET() {
       recentSignups
     });
   } catch (error) {
-    console.error("Admin API Error:", error);
     return NextResponse.json({ error: "Failed to fetch metrics" }, { status: 500 });
   }
 }
