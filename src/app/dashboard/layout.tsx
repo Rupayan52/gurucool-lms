@@ -1,3 +1,4 @@
+import AutoLogout from "@/components/AutoLogout";
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="h-screen bg-slate-50 flex overflow-hidden">
+      <AutoLogout timeoutMinutes={15} />
       
       {/* Mobile Overlay */}
       {isSidebarOpen && (
