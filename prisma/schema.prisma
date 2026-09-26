@@ -81,11 +81,12 @@ model CourseClass {
 }
 
 model Chapter {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   subjectId String
-  subject   Subject @relation(fields: [subjectId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
   quizzes   Quiz[]
+  lessons   Lesson[] // Added to resolve the Lesson relation error
 }
 
 model Quiz {
@@ -100,6 +101,7 @@ model Quiz {
 model QuizScore {
   id        String   @id @default(uuid())
   userId    String   
+  user      User     @relation(fields: [userId], references: [id]) // Added to resolve the User relation error
   quizId    String
   score     Int
   quiz      Quiz     @relation(fields: [quizId], references: [id])
