@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    if (!rateLimit(ip, 3, 60000)) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    if (!(await rateLimit)(ip, 3, 60000)) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
 
     const { newPassword } = await req.json();
     const cookieStore = await cookies();

@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    if (!rateLimit(ip, 10, 60000)) return NextResponse.json({ error: "Too many submissions." }, { status: 429 });
+    if (!(await rateLimit)(ip, 10, 60000)) return NextResponse.json({ error: "Too many submissions." }, { status: 429 });
 
     const { quizId, answers } = await req.json();
     const token = (await cookies()).get("auth_token")?.value;

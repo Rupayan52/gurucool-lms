@@ -1,20 +1,27 @@
-// A lightweight in-memory rate limiter to prevent brute-force attacks.
-// Note: In a multi-region production environment, this would be backed by Redis (e.g., Upstash).
-const rateLimitMap = new Map();
+import { prisma } from "@/lib/prisma";
 
-export function rateLimit(ip: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const windowStart = now - windowMs;
-  
-  const requestHistory = rateLimitMap.get(ip) || [];
-  const requestsInWindow = requestHistory.filter((timestamp: number) => timestamp > windowStart);
-  
-  if (requestsInWindow.length >= limit) {
-    return false; // Rate limit exceeded
+export async function rateLimit(ip: string, limit: number, windowMs: number) {
+  const windowStart = new Date(Date.now() - windowMs);
+
+  try {
+    // 1. Clean up old records for this IP to keep the table small and fast
+    await prisma.rateLimit.deleteMany({
+      where: { ip, createdAt: { lt: windowStart } }
+    });
+
+    // 2. Count active hits in the current window across ALL Vercel instances
+    const hits = await prisma.rateLimit.count({
+      where: { ip, createdAt: { gte: windowStart } }
+    });
+
+    // 3. Block if the distributed limit is reached
+    if (hits >= limit) return false;
+
+    // 4. Register the new hit globally
+    await prisma.rateLimit.create({ data: { ip } });
+    return true;
+  } catch (error) {
+    console.error("Rate limit DB error:", error);
+    return true; // Fail open: don't block legitimate users if DB has a brief hiccup
   }
-  
-  requestsInWindow.push(now);
-  rateLimitMap.set(ip, requestsInWindow);
-  
-  return true; // Allowed
 }

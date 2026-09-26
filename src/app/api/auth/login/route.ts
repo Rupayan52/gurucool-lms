@@ -9,7 +9,7 @@ import { loginSchema } from "@/lib/validations/auth";
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    if (!rateLimit(ip, 5, 60000)) {
+    if (!(await rateLimit)(ip, 5, 60000)) {
       return NextResponse.json({ error: "Too many login attempts." }, { status: 429 });
     }
 

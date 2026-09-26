@@ -119,3 +119,11 @@ model DeletionRequest {
   pin       String
   createdAt DateTime @default(now())
 }
+
+model RateLimit {
+  id        String   @id @default(uuid())
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+}

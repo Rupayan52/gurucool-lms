@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    if (!rateLimit(ip, 5, 60000)) return NextResponse.json({ error: "Spam detected." }, { status: 429 });
+    if (!(await rateLimit)(ip, 5, 60000)) return NextResponse.json({ error: "Spam detected." }, { status: 429 });
 
     const { subject, question } = await req.json();
     const token = (await cookies()).get("auth_token")?.value;
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    if (!rateLimit(ip, 30, 60000)) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    if (!(await rateLimit)(ip, 30, 60000)) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
     const token = (await cookies()).get("auth_token")?.value;
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
