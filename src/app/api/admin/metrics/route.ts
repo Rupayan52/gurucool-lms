@@ -3,21 +3,18 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const totalStudents = await prisma.user.count({ where: { role: 'STUDENT' } });
-    const activePaid = await prisma.subscription.count({ where: { planType: 'PAID_DIGITAL', isActive: true } });
-    const offlineBatches = await prisma.subscription.count({ where: { planType: 'OFFLINE_BATCH', isActive: true } });
-    
-    // Safely check if the model exists in the current Prisma Client instance
-    const pendingDoubts = prisma.doubtTicket 
-      ? await prisma.doubtTicket.count({ where: { status: 'PENDING' } }) 
-      : 0;
-    
-    const recentUsers = await prisma.user.findMany({
-      where: { role: 'STUDENT' },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      include: { subscription: true }
-    });
+    const [totalStudents, activePaid, offlineBatches, pendingDoubts, recentUsers] = await Promise.all([
+      prisma.user.count({ where: { role: 'STUDENT' } }),
+      prisma.subscription.count({ where: { planType: 'PAID_DIGITAL', isActive: true } }),
+      prisma.subscription.count({ where: { planType: 'OFFLINE_BATCH', isActive: true } }),
+      prisma.doubtTicket.count({ where: { status: 'PENDING' } }),
+      prisma.user.findMany({
+        where: { role: 'STUDENT' },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: { subscription: true }
+      })
+    ]);
 
     const recentSignups = recentUsers.map(user => ({
       id: user.id,
