@@ -1,7 +1,30 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type ScoreRecord = {
+  id: string;
+  quizTitle: string;
+  subjectName: string;
+  rawScore: number;
+  totalQuestions: number;
+  date: string;
+};
 
 export default function AssessmentsPage() {
+  const [scores, setScores] = useState<ScoreRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/quiz/scores")
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) setScores(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <div className="max-w-4xl animate-in fade-in duration-500">
       <header className="mb-8">
@@ -16,7 +39,6 @@ export default function AssessmentsPage() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Quiz Card 1 */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 relative overflow-hidden shadow-sm">
             <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
               Due Today
@@ -32,7 +54,6 @@ export default function AssessmentsPage() {
             </Link>
           </div>
 
-          {/* Quiz Card 2 (Linked to the Biology quiz we seeded in the database) */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 relative overflow-hidden shadow-sm">
             <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
               Due Tomorrow
@@ -52,7 +73,7 @@ export default function AssessmentsPage() {
 
       <section>
         <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Scores</h2>
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm min-h-[150px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -63,18 +84,23 @@ export default function AssessmentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="hover:bg-slate-50 transition-colors">
-                <td className="p-4 text-slate-900 font-medium">Chemical Reactions</td>
-                <td className="p-4 text-slate-500 text-sm">Chemistry</td>
-                <td className="p-4 text-slate-500 text-sm">Sep 20, 2026</td>
-                <td className="p-4 text-right font-bold text-emerald-600">85%</td>
-              </tr>
-              <tr className="hover:bg-slate-50 transition-colors">
-                <td className="p-4 text-slate-900 font-medium">Coordinate Geometry</td>
-                <td className="p-4 text-slate-500 text-sm">Mathematics</td>
-                <td className="p-4 text-slate-500 text-sm">Sep 15, 2026</td>
-                <td className="p-4 text-right font-bold text-emerald-600">92%</td>
-              </tr>
+              {loading ? (
+                <tr><td colSpan={4} className="p-8 text-center text-slate-400 animate-pulse">Loading scores...</td></tr>
+              ) : scores.length === 0 ? (
+                <tr><td colSpan={4} className="p-8 text-center text-slate-500">No quizzes completed yet.</td></tr>
+              ) : (
+                scores.map((score) => {
+                  const percentage = Math.round((score.rawScore / score.totalQuestions) * 100);
+                  return (
+                    <tr key={score.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-slate-900 font-medium">{score.quizTitle}</td>
+                      <td className="p-4 text-slate-500 text-sm">{score.subjectName}</td>
+                      <td className="p-4 text-slate-500 text-sm">{score.date}</td>
+                      <td className="p-4 text-right font-bold text-emerald-600">{percentage}%</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
