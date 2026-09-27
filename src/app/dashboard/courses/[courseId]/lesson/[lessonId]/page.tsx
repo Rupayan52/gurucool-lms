@@ -2,7 +2,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function LessonViewer({ params }: { params: { lessonId: string } }) {
+export default async function LessonViewer(props: { params: Promise<{ lessonId: string }> }) {
+  // Next.js 16 requirement: await the params
+  const params = await props.params;
+  
   const lesson = await prisma.lesson.findUnique({
     where: { id: params.lessonId },
     include: { chapter: { include: { subject: true } } }

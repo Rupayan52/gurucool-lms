@@ -1,10 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 
 type Question = { question: string; options: string[] };
 
-export default function QuizViewer({ params }: { params: { quizId: string } }) {
+export default function QuizViewer(props: { params: Promise<{ quizId: string }> }) {
+  // Next.js 16 requirement: use() unwraps the Promise in client components
+  const params = use(props.params);
+  
   const [quiz, setQuiz] = useState<{ title: string; questions: Question[] } | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(false);
