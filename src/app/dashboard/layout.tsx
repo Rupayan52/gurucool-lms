@@ -1,3 +1,4 @@
+import LogoutButton from "@/components/LogoutButton";
 "use client";
 import AutoLogout from "@/components/AutoLogout";
 import Link from "next/link";

@@ -43,15 +43,7 @@ model Subscription {
   endDate   DateTime
 }
 
-model DoubtTicket {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject   String
-  question  String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-}
+
 
 model CourseClass {
   id        String    @id @default(uuid())
@@ -126,4 +118,16 @@ model RateLimit {
   createdAt DateTime @default(now())
 
   @@index([ip, createdAt])
+}
+
+model DoubtTicket {
+  id        String   @id @default(uuid())
+  userId    String
+  subject   String
+  question  String
+  answer    String?  @db.Text
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 }

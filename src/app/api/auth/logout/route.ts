@@ -3,9 +3,7 @@ import { cookies } from "next/headers";
 
 export async function POST() {
   const cookieStore = await cookies();
-  
-  // Securely destroy the HttpOnly session cookie
-  cookieStore.delete("auth_token");
-  
+  // The crucial fix: Force the browser to delete the cookie across the entire domain
+  cookieStore.set("auth_token", "", { maxAge: 0, path: "/" });
   return NextResponse.json({ success: true });
 }
