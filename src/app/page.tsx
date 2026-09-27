@@ -2,44 +2,44 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-      <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-      
-      <div className="max-w-4xl text-center px-6 relative z-10">
-        <div className="mb-6 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700">
-          🚀 Next-Generation Phygital LMS
+    <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background accents matching the enterprise theme */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+      <div className="max-w-3xl w-full text-center relative z-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-widest mb-8 border border-blue-100 shadow-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+          </span>
+          Next-Generation Phygital LMS
         </div>
-        <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-8">
-          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">GuruCool.</span>
+
+        <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter mb-6">
+          Welcome to <span className="text-blue-600">GuruCool.</span>
         </h1>
-        <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-          Seamlessly bridging the gap between offline classrooms and digital learning. 
-          Manage batches, track student progress, and resolve doubts in real-time.
+
+        <p className="text-lg md:text-xl text-slate-500 font-medium mb-12 max-w-2xl mx-auto leading-relaxed">
+          Seamlessly bridging the gap between offline classrooms and digital learning. Manage batches, track student progress, and resolve doubts in real-time.
         </p>
-        
-        <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
-          <Link 
-            href="/register" 
-            className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-600/30 text-lg"
-          >
-            Student Onboarding
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link href="/register" className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 hover:-translate-y-0.5 transition-all shadow-lg shadow-blue-600/20">
+            Register yourself
           </Link>
-          <Link 
-            href="/login" 
-            className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 font-bold rounded-xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all text-lg"
-          >
-            Student Login
-          </Link>
-          <Link 
-            href="/admin-login" 
-            className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg text-lg"
-          >
-            Admin Control Center
+          <Link href="/login" className="w-full sm:w-auto px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 hover:-translate-y-0.5 transition-all shadow-sm">
+            Login as Student/Faculty
           </Link>
         </div>
       </div>
-    </div>
+
+      {/* Hidden Admin Backdoor */}
+      <div className="absolute bottom-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
+        <Link href="/login?admin=true" className="text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm font-bold">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </Link>
+      </div>
+    </main>
   );
 }
