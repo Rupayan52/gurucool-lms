@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function Login() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isAdminLogin = searchParams.get("admin") === "true";
@@ -34,7 +34,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 p-4 relative overflow-hidden">
-      {/* Decorative Background */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/5 blur-[120px] rounded-full pointer-events-none"></div>
 
@@ -78,12 +77,19 @@ export default function Login() {
         )}
       </div>
 
-      {/* The Hidden Admin Backdoor */}
       <div className="absolute bottom-6 right-6 opacity-20 hover:opacity-100 transition-opacity">
         <Link href="/login?admin=true" className="text-slate-900 hover:text-blue-600 transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="text-xl font-bold text-slate-400 animate-pulse">Authenticating Secure Connection...</div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
