@@ -100,3 +100,14 @@ export default function Login() {
     </Suspense>
   );
 }
+    </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-900"><div className="text-blue-500 font-bold animate-pulse tracking-widest uppercase">Initializing Gateway...</div></div>}>
+      <LoginGateway />
+    </Suspense>
+  );
+}
