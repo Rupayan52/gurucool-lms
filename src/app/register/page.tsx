@@ -1,101 +1,60 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function RegisterPage() {
+export default function Register() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "STUDENT" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("STUDENT");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        router.push("/login");
-      } else {
-        const data = await res.json();
-        setError(data.error || "Registration failed");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, role })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      router.push(data.role === "TEACHER" ? "/teacher" : "/dashboard");
+    } else alert(data.error);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Join GuruCool
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Create your account to start learning
-          </p>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 p-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+        <div className="text-center mb-8">
+          <div className="text-3xl font-black tracking-tighter mb-2"><span className="text-blue-600">Guru</span>Cool.</div>
+          <p className="text-slate-500 font-medium">Create your elite learning account.</p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
-          <div className="space-y-4">
-            <input
-              type="text"
-              required
-              className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <input
-              type="email"
-              required
-              className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Email address"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <input
-              type="password"
-              required
-              className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-            <select
-              className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            >
-              <option value="STUDENT">Student</option>
-              <option value="TEACHER">Teacher</option>
-              <option value="ADMIN">Administrator</option>
-            </select>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
-          >
-            {loading ? "Creating account..." : "Sign Up"}
+        <div className="flex p-1 bg-slate-100 rounded-xl mb-8">
+          <button onClick={() => setRole("STUDENT")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${role === "STUDENT" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Scholar</button>
+          <button onClick={() => setRole("TEACHER")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${role === "TEACHER" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Faculty</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Full Name</label>
+            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" />
+          </div>
+          <div>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Email</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" />
+          </div>
+          <div>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Password</label>
+            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} minLength={6} className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 font-medium" />
+          </div>
+          <button type="submit" className="w-full text-white font-bold py-3.5 rounded-xl transition-all shadow-md bg-blue-600 hover:bg-blue-700">
+            Create Account
           </button>
         </form>
-        <div className="text-center text-sm">
-          <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Already have an account? Sign in
-          </Link>
+        <div className="mt-8 text-center text-sm font-medium text-slate-500">
+          Already have an account? <Link href="/login" className="text-blue-600 font-bold hover:underline">Log in</Link>
         </div>
       </div>
     </div>

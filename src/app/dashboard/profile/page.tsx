@@ -2,201 +2,71 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type UserProfile = {
-  name: string;
-  email: string;
-  role: string;
-  subscription: string;
-  createdAt: string;
-  hasActiveRequest: boolean;
-};
-
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [pin, setPin] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  
-  // Password change states
+export default function Profile() {
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const [passMessage, setPassMessage] = useState("");
-  const [passError, setPassError] = useState("");
-  const [passLoading, setPassLoading] = useState(false);
-  const [securityLogs, setSecurityLogs] = useState<any[]>([]);
-  
   const router = useRouter();
 
-  const fetchProfile = async () => {
-    const res = await fetch("/api/auth/profile");
-    if (res.ok) {
-      const data = await res.json();
-      setProfile(data);
-      fetch("/api/auth/security-logs").then(r => r.json()).then(l => setSecurityLogs(Array.isArray(l) ? l : []));
-    }
-  };
-
   useEffect(() => {
-    fetchProfile();
+    fetch("/api/student/profile").then(res => res.json()).then(setUser);
   }, []);
 
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPassLoading(true);
-    setPassError("");
-    setPassMessage("");
-
     const res = await fetch("/api/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newPassword }),
-    });
-
-    if (res.ok) {
-      setPassMessage("Password updated successfully.");
-      setNewPassword("");
-    } else {
-      const data = await res.json();
-      setPassError(data.error || "Failed to update password.");
-    }
-    setPassLoading(false);
-  };
-
-  const handleRequestDeletion = async () => {
-    setLoading(true);
-    setError("");
-    setMessage("");
-    const res = await fetch("/api/auth/request-deletion", { method: "POST" });
-    if (res.ok) {
-      setMessage("Request sent. Contact admin for your PIN.");
-      fetchProfile();
-    } else {
-      setError("Failed to submit request.");
-    }
-    setLoading(false);
-  };
-
-  const handleConfirmDeletion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const res = await fetch("/api/auth/delete-account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin })
+      body: JSON.stringify({ newPassword })
     });
     if (res.ok) {
+      alert("Password updated securely. Please log in again.");
       router.push("/login");
-    } else {
-      const data = await res.json();
-      setError(data.error || "Incorrect PIN.");
-      setLoading(false);
     }
   };
 
-  if (!profile) return <div className="p-8 text-slate-500 animate-pulse">Loading profile...</div>;
+  if (!user) return <div className="p-10 animate-pulse text-slate-400 font-bold">Decrypting profile data...</div>;
 
   return (
-    <div className="max-w-3xl animate-in fade-in duration-500">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Profile</h1>
-        <p className="mt-2 text-slate-500">Manage your account details and security settings.</p>
+    <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
+      <header className="mb-10">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Profile & Security</h1>
+        <p className="mt-2 text-slate-500 font-medium text-lg">Manage your identity and cryptographic keys.</p>
       </header>
 
-      {/* Profile Details Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Username</label>
-            <div className="text-base font-semibold text-slate-900">{profile.name}</div>
+      {/* Identity Card */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mb-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full -z-10"></div>
+        
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 rounded-full bg-slate-900 text-white flex items-center justify-center text-4xl font-black shadow-inner shadow-slate-700/50">
+            {user.name.charAt(0)}
           </div>
-          <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
-            <div className="text-base font-semibold text-slate-900">{profile.email}</div>
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Role</label>
-            <div className="inline-block px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold">{profile.role}</div>
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Plan</label>
-            <div className="inline-block px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold">{profile.subscription}</div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-900 mb-2">{user.name}</h2>
+            <div className="flex gap-3">
+              <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold font-mono border border-slate-200">{user.email}</span>
+              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-black uppercase tracking-widest border border-blue-200">{user.role}</span>
+              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black uppercase tracking-widest border border-emerald-200">Pro Plan</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Unified Security Settings Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 p-6 bg-slate-50/50">
-          <h2 className="text-lg font-bold text-slate-900">Security Settings</h2>
-          <p className="text-sm text-slate-500 mt-1">Update your password or manage your account status.</p>
-        </div>
-
-        <div className="p-6 space-y-8">
-          {/* Change Password Section */}
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 mb-3">Change Password</h3>
-            {passError && <div className="text-red-600 text-xs font-medium mb-3">{passError}</div>}
-            {passMessage && <div className="text-emerald-600 text-xs font-medium mb-3">{passMessage}</div>}
-            <form onSubmit={handlePasswordUpdate} className="flex gap-3 max-w-sm">
-              <input
-                type="password"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                className="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              />
-              <button
-                type="submit"
-                disabled={passLoading}
-                className="px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-sm disabled:opacity-70"
-              >
-                {passLoading ? "Saving..." : "Update"}
-              </button>
-            </form>
+      {/* Security Module */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+        <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          Cryptographic Access
+        </h3>
+        
+        <form onSubmit={handlePasswordChange} className="max-w-md">
+          <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Rotate Password</label>
+          <div className="flex gap-4">
+            <input type="password" required minLength={6} placeholder="Enter new password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="flex-1 border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 font-medium" />
+            <button type="submit" className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-md">Rotate Key</button>
           </div>
-
-          <hr className="border-slate-100" />
-
-          {/* Account Deletion Section */}
-          <div>
-            <h3 className="text-sm font-bold text-red-600 mb-1">Delete Account</h3>
-            <p className="text-xs text-slate-500 mb-4 max-w-lg">Permanently remove your account and all associated learning data. This action cannot be undone.</p>
-            
-            {error && <div className="text-red-600 text-xs font-medium mb-3">{error}</div>}
-            {message && <div className="text-emerald-600 text-xs font-medium mb-3">{message}</div>}
-
-            {!profile.hasActiveRequest ? (
-              <button 
-                onClick={handleRequestDeletion}
-                disabled={loading}
-                className="px-4 py-2 border border-red-200 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors text-sm"
-              >
-                Request Deletion PIN
-              </button>
-            ) : (
-              <form onSubmit={handleConfirmDeletion} className="flex gap-3 max-w-sm">
-                <input 
-                  type="text" 
-                  maxLength={6}
-                  placeholder="6-digit admin PIN"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  required
-                  className="w-36 border border-red-200 rounded-lg px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono text-sm tracking-widest bg-red-50/30"
-                />
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-sm"
-                >
-                  Confirm Delete
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
+          <p className="mt-3 text-xs text-slate-400 font-medium">Rotating your password will instantly terminate all active sessions across all devices.</p>
+        </form>
       </div>
     </div>
   );
