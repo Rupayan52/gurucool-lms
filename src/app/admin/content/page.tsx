@@ -33,7 +33,7 @@ export default function AdminContentManager() {
           {classes.map(c => 
             c.subjects.map((s: any) => 
               s.chapters.map((ch: any) => (
-                <option key={ch.id} value={ch.id}>{c.name} > {s.name} > {ch.name}</option>
+                <option key={ch.id} value={ch.id}>{c.name} - {s.name} - {ch.name}</option>
               ))
             )
           )}
