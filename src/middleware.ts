@@ -6,6 +6,20 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value || '';
   const role = request.cookies.get('user_role')?.value || '';
 
+  // --- API ROUTE PROTECTION (THE FIX) ---
+  if (path.startsWith('/api') && !path.startsWith('/api/auth')) {
+    if (!token) {
+      return NextResponse.json({ error: "Access Denied: Missing Authentication Token" }, { status: 401 });
+    }
+    if (path.startsWith('/api/admin') && role !== 'ADMIN') {
+      return NextResponse.json({ error: "Access Denied: Admin Clearance Required" }, { status: 403 });
+    }
+    if (path.startsWith('/api/teacher') && role !== 'TEACHER' && role !== 'ADMIN') {
+      return NextResponse.json({ error: "Access Denied: Faculty Clearance Required" }, { status: 403 });
+    }
+  }
+
+  // --- PAGE ROUTE PROTECTION ---
   const isAuthPage = path === '/login' || path === '/register';
 
   if (isAuthPage && token) {
@@ -14,18 +28,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  if (token) {
+  if (token && !path.startsWith('/api')) {
     if (path.startsWith('/dashboard') && role === 'TEACHER') return NextResponse.redirect(new URL('/teacher', request.url));
     if (path.startsWith('/teacher') && role === 'STUDENT') return NextResponse.redirect(new URL('/dashboard', request.url));
     
-    // Strict Portal Isolation with a specific exception for Teachers to manage content
     if (path.startsWith('/admin')) {
       if (role === 'ADMIN') {
-        // Admins can access everything (Users, Content, etc.)
+        // Admins allowed everywhere
       } else if (role === 'TEACHER' && path.startsWith('/admin/content')) {
-        // Teachers are exclusively allowed to access the Content Manager to upload lessons
+        // Teachers allowed to content
       } else {
-        // Bounce unauthorized access (e.g., Teachers trying to access /admin/users)
         return NextResponse.redirect(new URL(role === 'TEACHER' ? '/teacher' : '/dashboard', request.url));
       }
     }
@@ -39,5 +51,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // We removed 'api' from the negative lookahead. The middleware now guards all backend APIs.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
