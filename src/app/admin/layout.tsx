@@ -1,42 +1,35 @@
-"use client";
+import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import AdminInactivityTimer from "@/components/AdminInactivityTimer";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await fetch('/api/admin/auth', { method: 'DELETE' });
-    router.push('/admin-login');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row text-slate-100">
-      <AdminInactivityTimer />
-      
-      <aside className="w-full md:w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
-        <div className="p-6">
-          <h1 className="text-2xl font-black text-emerald-400 tracking-tight">GuruCool.</h1>
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 block">Control Center</span>
+    <div className="min-h-screen bg-slate-50 flex">
+      <aside className="w-64 bg-slate-900 text-white flex flex-col p-6 shadow-2xl z-20 sticky top-0 h-screen">
+        <div className="text-2xl font-black tracking-tighter mb-12 flex items-center gap-2">
+          <span className="text-blue-500">Guru</span>Cool.
+          <span className="bg-red-600 text-[10px] px-2 py-1 rounded uppercase tracking-widest font-black shadow-sm">Admin</span>
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          <Link href="/admin" className="block px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors">Overview</Link>
-          <Link href="/admin/users" className="block px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors">Manage Users</Link>
-          <div className="block px-4 py-3 rounded-xl text-slate-600 cursor-not-allowed">Content Hub</div>
-          <div className="block px-4 py-3 rounded-xl text-slate-600 cursor-not-allowed">Subscriptions</div>
-        </nav>
-        <div className="p-4 border-t border-slate-800 space-y-2">
-          <Link href="/login" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-sm font-medium">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-xs">N</span> Return to App
+        
+        <div className="flex-grow space-y-2">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 mt-4">Command Center</div>
+          
+          <Link href="/admin/content" className="flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-3 rounded-xl transition-colors font-semibold group">
+            <svg className="w-5 h-5 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            Content Manager
           </Link>
-          <button onClick={handleLogout} className="w-full text-left px-4 py-3 rounded-xl text-red-400 hover:bg-red-950/30 transition-colors text-sm font-medium">
-            Secure Logout
-          </button>
+          
+          <Link href="/admin/users" className="flex items-center gap-3 text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-3 rounded-xl transition-colors font-semibold group">
+            <svg className="w-5 h-5 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            User Directory
+          </Link>
+        </div>
+        
+        <div className="pt-6 border-t border-slate-800">
+          <LogoutButton />
         </div>
       </aside>
       
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto relative">
         {children}
       </main>
     </div>
