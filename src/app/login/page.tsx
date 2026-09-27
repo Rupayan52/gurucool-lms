@@ -27,7 +27,6 @@ function LoginGateway() {
     const data = await res.json();
     
     if (res.ok) {
-      // The Database dictates the routing automatically
       if (data.role === "TEACHER") {
         router.push("/teacher");
       } else if (data.role === "ADMIN") {
@@ -43,7 +42,6 @@ function LoginGateway() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-slate-900 p-4 relative overflow-hidden">
-      {/* High-End Enterprise Background */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full pointer-events-none"></div>
 
@@ -88,18 +86,6 @@ function LoginGateway() {
           </div>
         )}
       </div>
-
-    </div>
-  );
-}
-
-export default function Login() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-900"><div className="text-blue-500 font-bold animate-pulse tracking-widest uppercase">Initializing Gateway...</div></div>}>
-      <LoginGateway />
-    </Suspense>
-  );
-}
     </div>
   );
 }
