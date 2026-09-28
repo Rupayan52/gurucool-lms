@@ -11,8 +11,11 @@ export async function GET(req: Request) {
 
   if (subjectId) {
     const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
-    const chapters = await prisma.chapter.findMany({ where: { subjectId }, orderBy: { createdAt: 'asc' } });
-    const lessons = await prisma.lesson.findMany({ where: { chapterId: { in: chapters.map((c: any) => c.id) } }, orderBy: { createdAt: 'asc' } });
+    // Stripped the invalid orderBy: { createdAt: 'asc' } logic to resolve TS2353
+    const chapters = await prisma.chapter.findMany({ where: { subjectId } });
+    const lessons = await prisma.lesson.findMany({ 
+      where: { chapterId: { in: chapters.map((c: any) => c.id) } } 
+    });
     return NextResponse.json({ subject, chapters, lessons });
   }
 
