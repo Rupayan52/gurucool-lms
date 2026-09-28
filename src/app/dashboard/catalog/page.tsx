@@ -7,12 +7,10 @@ export default function CourseCatalog() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/student/subjects").then(r => r.json()),
-      fetch("/api/admin/enrollments").then(r => r.json()).then(data => data.teachers || [])
-    ]).then(([subs, profs]) => {
-      setSubjects(Array.isArray(subs) ? subs : []);
-      setTeachers(profs);
+    // Fetch from the new safe Catalog API
+    fetch("/api/catalog").then(r => r.json()).then(data => {
+      setSubjects(data.subjects || []);
+      setTeachers(data.teachers || []);
       setLoading(false);
     });
   }, []);
