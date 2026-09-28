@@ -9,9 +9,12 @@ export async function GET() {
   const students = await prisma.user.findMany({ where: { role: "STUDENT" }, select: { id: true, name: true, email: true } });
   const teachers = await prisma.user.findMany({ where: { role: "TEACHER" }, select: { id: true, name: true } });
   const subjects = await prisma.subject.findMany({ select: { id: true, name: true } });
-  const enrollments = await prisma.enrollment.findMany();
+  
+  // Fetch from the new SubjectCohort table
+  const cohorts = await prisma.subjectCohort.findMany();
 
-  return NextResponse.json({ students, teachers, subjects, enrollments });
+  // Return as "enrollments" so the frontend UI doesn't have to change at all
+  return NextResponse.json({ students, teachers, subjects, enrollments: cohorts });
 }
 
 export async function POST(req: Request) {
@@ -20,7 +23,7 @@ export async function POST(req: Request) {
 
   const { studentId, subjectId, teacherId } = await req.json();
   
-  await prisma.enrollment.upsert({
+  await prisma.subjectCohort.upsert({
     where: { studentId_subjectId: { studentId, subjectId } },
     update: { teacherId },
     create: { studentId, subjectId, teacherId }

@@ -7,10 +7,10 @@ import { rateLimit } from "@/lib/rate-limit";
 async function getDynamicChannelOwner(session: any, subjectId: string) {
   if (session.role === "TEACHER") return session.userId;
   
-  const enrollment = await prisma.enrollment.findUnique({
+  const cohort = await prisma.subjectCohort.findUnique({
     where: { studentId_subjectId: { studentId: session.userId, subjectId } }
   });
-  return enrollment?.teacherId;
+  return cohort?.teacherId;
 }
 
 export async function GET(req: Request) {

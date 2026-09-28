@@ -27,8 +27,8 @@ model User {
   students        User[]           @relation("StudentFaculty")
   forumPosts      ForumPost[]      @relation("PostAuthor")
   ownedChannels   ForumPost[]      @relation("ChannelOwner")
-  studentEnrollments Enrollment[] @relation("StudentEnrollments")
-  teacherEnrollments Enrollment[] @relation("TeacherEnrollments")
+  studentCohorts  SubjectCohort[]  @relation("StudentCohort")
+  teacherCohorts  SubjectCohort[]  @relation("TeacherCohort")
 }
 
 model SecurityLog {
@@ -57,13 +57,13 @@ model CourseClass {
 }
 
 model Subject {
-  id            String      @id @default(uuid())
+  id            String          @id @default(uuid())
   name          String
   courseClassId String
-  courseClass   CourseClass @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
+  courseClass   CourseClass     @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
   chapters      Chapter[]
   ForumPost     ForumPost[]
-  enrollments Enrollment[]
+  cohorts       SubjectCohort[] @relation("SubjectCohort")
 }
 
 model Chapter {
@@ -150,4 +150,18 @@ model ForumPost {
   user           User     @relation("PostAuthor", fields: [userId], references: [id])
   subject        Subject  @relation(fields: [subjectId], references: [id])
   channelOwner   User     @relation("ChannelOwner", fields: [channelOwnerId], references: [id])
+}
+
+model SubjectCohort {
+  id        String   @id @default(uuid())
+  studentId String
+  teacherId String
+  subjectId String
+  createdAt DateTime @default(now())
+
+  student User    @relation("StudentCohort", fields: [studentId], references: [id])
+  teacher User    @relation("TeacherCohort", fields: [teacherId], references: [id])
+  subject Subject @relation("SubjectCohort", fields: [subjectId], references: [id])
+
+  @@unique([studentId, subjectId])
 }
