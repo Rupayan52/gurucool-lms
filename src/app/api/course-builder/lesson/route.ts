@@ -7,12 +7,17 @@ export async function POST(req: Request) {
     const session = await verifyServerAuth();
     if (!session || (session.role !== "ADMIN" && session.role !== "TEACHER")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { title, chapterId, videoUrl, pdfUrl, orderIndex } = await req.json();
+    const { title, chapterId, videoUrl, pdfUrl, orderIndex, isLive, liveUrl } = await req.json();
     await prisma.lesson.create({
-      data: { title, chapterId, videoUrl: videoUrl || "", pdfUrl: pdfUrl || "", orderIndex: orderIndex || 1 } as any
+      data: { 
+        title, chapterId, 
+        videoUrl: videoUrl || "", 
+        pdfUrl: pdfUrl || "", 
+        orderIndex: orderIndex || 1,
+        isLive: isLive || false,
+        liveUrl: liveUrl || ""
+      } as any
     });
     return NextResponse.json({ success: true });
-  } catch (error) { 
-    return NextResponse.json({ error: "Failed to deploy lesson", details: String(error) }, { status: 500 }); 
-  }
+  } catch (error) { return NextResponse.json({ error: "Failed to deploy lesson", details: String(error) }, { status: 500 }); }
 }

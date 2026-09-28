@@ -11,6 +11,8 @@ export default function ContentManager() {
   
   const [lessonTitle, setLessonTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [isLive, setIsLive] = useState(false);
+  const [liveUrl, setLiveUrl] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
 
   const loadData = () => {
@@ -41,10 +43,10 @@ export default function ContentManager() {
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChapter) return alert("Select a Chapter first.");
-    const res = await fetch("/api/course-builder/lesson", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: lessonTitle, chapterId: activeChapter, videoUrl, pdfUrl, orderIndex: 1 }) });
+    const res = await fetch("/api/course-builder/lesson", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: lessonTitle, chapterId: activeChapter, videoUrl, pdfUrl, orderIndex: 1, isLive, liveUrl }) });
     const data = await res.json();
     if (data.error) alert("Deployment Failed: " + data.error + " | " + data.details);
-    else { setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); alert("Lesson Deployed Successfully."); loadData(); }
+    else { setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); setIsLive(false); setLiveUrl(""); alert("Lesson Deployed Successfully."); loadData(); }
   };
 
   return (
