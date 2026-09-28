@@ -20,11 +20,16 @@ export async function POST(req: Request) {
     const { type, name, title, subjectId } = await req.json();
 
     if (type === "SUBJECT") {
-      await prisma.subject.create({ data: { name, classId: "default" } }); // Using a dummy classId if your schema requires it, or omit if optional
+      // Create a Subject using strictly the 'name' column
+      await prisma.subject.create({ data: { name } }); 
     } else if (type === "CHAPTER") {
       if (!subjectId) return NextResponse.json({ error: "Subject required" }, { status: 400 });
-      await prisma.chapter.create({ data: { title, subjectId } });
+      // Create a Chapter using 'name' instead of 'title' based on standard Prisma conventions
+      // If the UI passes 'title', we map it to the 'name' column in the database
+      await prisma.chapter.create({ data: { name: title || name, subjectId } });
     }
     return NextResponse.json({ success: true });
-  } catch (error) { return NextResponse.json({ error: "Failed to create" }, { status: 500 }); }
+  } catch (error) { 
+    return NextResponse.json({ error: "Failed to create", details: String(error) }, { status: 500 }); 
+  }
 }
