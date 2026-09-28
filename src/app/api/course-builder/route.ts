@@ -27,8 +27,6 @@ export async function POST(req: Request) {
     const { type, name, title, subjectId } = await req.json();
 
     if (type === "SUBJECT") {
-      // Instead of passing a flat string, we use Prisma's nested 'create' syntax.
-      // This tells the database: "Create this Subject, AND generate a linked CourseClass for it."
       await prisma.subject.create({ 
         data: { 
           name, 
@@ -39,7 +37,8 @@ export async function POST(req: Request) {
       }); 
     } else if (type === "CHAPTER") {
       if (!subjectId) return NextResponse.json({ error: "Subject required" }, { status: 400 });
-      await prisma.chapter.create({ data: { title: title || name, name: title || name, subjectId } as any });
+      // Strictly passing 'name' and dropping the unknown 'title' argument
+      await prisma.chapter.create({ data: { name: title || name, subjectId } as any });
     }
     return NextResponse.json({ success: true });
   } catch (error) { 
