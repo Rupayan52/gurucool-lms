@@ -13,7 +13,7 @@ export default function FacultyCourseHub() {
 
   useEffect(() => {
     fetch("/api/admin/courses").then(r => r.json()).then(data => {
-      const allSubjects = data.flatMap((c: any) => c.subjects);
+      const allSubjects = data;
       setSubjects(allSubjects);
       if (allSubjects.length > 0) setActiveSubject(allSubjects[0].id);
     });

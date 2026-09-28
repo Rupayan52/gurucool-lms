@@ -9,19 +9,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    // The schema uses Subject as the top-level entity. We fetch subjects and chapters directly.
+    // Return pure Subjects mapped directly from the database schema
     const subjects = await prisma.subject.findMany({
+      orderBy: { name: 'asc' },
       include: { chapters: true }
     });
     
-    // Wrap the subjects in a single parent array to satisfy the frontend UI's hierarchy expectations
-    return NextResponse.json([
-      {
-        id: "core-curriculum",
-        name: "Core Curriculum",
-        subjects: subjects
-      }
-    ]);
+    return NextResponse.json(subjects);
   } catch (error) {
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
