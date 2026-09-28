@@ -22,6 +22,11 @@ model User {
   quizScores       QuizScore[]
   deletionRequest  DeletionRequest?
   securityLogs     SecurityLog[]
+  teacherId String?
+  teacher User? @relation("StudentFaculty", fields: [teacherId], references: [id])
+  students User[] @relation("StudentFaculty")
+  forumPosts ForumPost[] @relation("PostAuthor")
+  ownedChannels ForumPost[] @relation("ChannelOwner")
 }
 
 model SecurityLog {
@@ -130,4 +135,17 @@ model DoubtTicket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model ForumPost {
+  id             String   @id @default(uuid())
+  content        String   @db.Text
+  userId         String
+  subjectId      String
+  channelOwnerId String
+  isPinned       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user           User     @relation("PostAuthor", fields: [userId], references: [id])
+  subject        Subject  @relation(fields: [subjectId], references: [id])
+  channelOwner   User     @relation("ChannelOwner", fields: [channelOwnerId], references: [id])
 }
