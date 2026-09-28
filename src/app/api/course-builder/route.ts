@@ -7,7 +7,6 @@ export async function GET() {
     const session = await verifyServerAuth();
     if (!session || (session.role !== "ADMIN" && session.role !== "TEACHER")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
-    // Manual mapping eliminates Prisma relation strictness crashes
     const subjects = await prisma.subject.findMany({ orderBy: { name: 'asc' } });
     const chapters = await prisma.chapter.findMany();
     
@@ -28,10 +27,18 @@ export async function POST(req: Request) {
     const { type, name, title, subjectId } = await req.json();
 
     if (type === "SUBJECT") {
-      await prisma.subject.create({ data: { name, courseClass: "General Batch" } as any }); 
+      // Instead of passing a flat string, we use Prisma's nested 'create' syntax.
+      // This tells the database: "Create this Subject, AND generate a linked CourseClass for it."
+      await prisma.subject.create({ 
+        data: { 
+          name, 
+          courseClass: {
+            create: { name: "General Batch" }
+          }
+        } as any 
+      }); 
     } else if (type === "CHAPTER") {
       if (!subjectId) return NextResponse.json({ error: "Subject required" }, { status: 400 });
-      // Pass both title and name to bypass any schema mismatch
       await prisma.chapter.create({ data: { title: title || name, name: title || name, subjectId } as any });
     }
     return NextResponse.json({ success: true });
