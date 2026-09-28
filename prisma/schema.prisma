@@ -27,6 +27,8 @@ model User {
   students        User[]           @relation("StudentFaculty")
   forumPosts      ForumPost[]      @relation("PostAuthor")
   ownedChannels   ForumPost[]      @relation("ChannelOwner")
+  studentEnrollments Enrollment[] @relation("StudentEnrollments")
+  teacherEnrollments Enrollment[] @relation("TeacherEnrollments")
 }
 
 model SecurityLog {
@@ -61,6 +63,7 @@ model Subject {
   courseClass   CourseClass @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
   chapters      Chapter[]
   ForumPost     ForumPost[]
+  enrollments Enrollment[]
 }
 
 model Chapter {

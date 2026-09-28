@@ -20,12 +20,9 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Auto-assign new scholars to the first available Faculty member
-    const defaultTeacher = assignedRole === "STUDENT" ? await prisma.user.findFirst({ where: { role: "TEACHER" } }) : null;
-    const teacherId = defaultTeacher ? defaultTeacher.id : null;
-
+    // Pure, untampered user creation. Admins will handle batch routing.
     const user = await prisma.user.create({ 
-      data: { name, email, passwordHash: hashedPassword, role: assignedRole, teacherId } 
+      data: { name, email, passwordHash: hashedPassword, role: assignedRole } 
     });
 
     const token = jwt.sign({ userId: user.id, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: "7d" });

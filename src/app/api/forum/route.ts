@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { verifyServerAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
-async function getChannelOwnerId(session: any) {
+// DYNAMIC ROUTING: Find exact Teacher assigned to this Student for this specific Subject
+async function getDynamicChannelOwner(session: any, subjectId: string) {
   if (session.role === "TEACHER") return session.userId;
-  const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  return user?.teacherId;
+  
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { studentId_subjectId: { studentId: session.userId, subjectId } }
+  });
+  return enrollment?.teacherId;
 }
 
 export async function GET(req: Request) {
@@ -17,7 +21,7 @@ export async function GET(req: Request) {
   const session = await verifyServerAuth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const channelOwnerId = await getChannelOwnerId(session);
+  const channelOwnerId = await getDynamicChannelOwner(session, subjectId);
   if (!channelOwnerId) return NextResponse.json([]);
 
   const posts = await prisma.forumPost.findMany({
@@ -39,8 +43,8 @@ export async function POST(req: Request) {
     const { subjectId, content } = await req.json();
     if (content.length < 10 || content.length > 500) return NextResponse.json({ error: "Messages must be 10-500 chars." }, { status: 400 });
 
-    const channelOwnerId = await getChannelOwnerId(session);
-    if (!channelOwnerId) return NextResponse.json({ error: "No assigned Faculty." }, { status: 403 });
+    const channelOwnerId = await getDynamicChannelOwner(session, subjectId);
+    if (!channelOwnerId) return NextResponse.json({ error: "You are not enrolled in a faculty batch for this subject." }, { status: 403 });
 
     await prisma.forumPost.create({ data: { userId: session.userId, subjectId, channelOwnerId, content } });
     return NextResponse.json({ success: true });
@@ -51,11 +55,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   const session = await verifyServerAuth();
-  if (!session || (session.role !== "TEACHER" && session.role !== "ADMIN")) return NextResponse.json({ error: "Faculty clearance required." }, { status: 403 });
+  if (!session || (session.role !== "TEACHER" && session.role !== "ADMIN")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   
   const { postId, isPinned } = await req.json();
   const post = await prisma.forumPost.findUnique({ where: { id: postId } });
-  if (post?.channelOwnerId !== session.userId && session.role !== "ADMIN") return NextResponse.json({ error: "Can only moderate your own batch." }, { status: 403 });
+  if (post?.channelOwnerId !== session.userId && session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await prisma.forumPost.update({ where: { id: postId }, data: { isPinned } });
   return NextResponse.json({ success: true });
@@ -63,12 +67,12 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await verifyServerAuth();
-  if (!session || (session.role !== "TEACHER" && session.role !== "ADMIN")) return NextResponse.json({ error: "Faculty clearance required." }, { status: 403 });
+  if (!session || (session.role !== "TEACHER" && session.role !== "ADMIN")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   
   const url = new URL(req.url);
   const postId = url.searchParams.get("postId");
   const post = await prisma.forumPost.findUnique({ where: { id: String(postId) } });
-  if (post?.channelOwnerId !== session.userId && session.role !== "ADMIN") return NextResponse.json({ error: "Can only moderate your own batch." }, { status: 403 });
+  if (post?.channelOwnerId !== session.userId && session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await prisma.forumPost.delete({ where: { id: String(postId) } });
   return NextResponse.json({ success: true });
