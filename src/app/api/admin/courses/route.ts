@@ -8,7 +8,7 @@ export async function GET() {
     if (!session || (session.role !== "ADMIN" && session.role !== "TEACHER")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const classes = await prisma.class.findMany({
+    const classes = await prisma.course.findMany({
       include: { subjects: { include: { chapters: true } } }
     });
     return NextResponse.json(classes);
