@@ -21,9 +21,10 @@ export async function GET(req: Request) {
     const isTeacher = session.role === "TEACHER" || session.role === "ADMIN";
 
     // Generate cryptographic token
+    // Using TS bypass for 'name' fallback to satisfy strict typing
     const at = new AccessToken(apiKey, apiSecret, {
       identity: session.userId,
-      name: session.name,
+      name: (session as any).name || "Participant",
     });
 
     // Teachers can broadcast (publish), Students can only watch (subscribe)

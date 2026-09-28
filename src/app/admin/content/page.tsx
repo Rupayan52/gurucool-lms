@@ -13,10 +13,9 @@ export default function ContentManager() {
   const [videoUrl, setVideoUrl] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
   
-  // Live Broadcast States
+  // Enterprise Broadcast States
   const [broadcastType, setBroadcastType] = useState("VOD");
   const [scheduledTime, setScheduledTime] = useState("");
-  const [liveUrl, setLiveUrl] = useState("");
 
   const loadData = () => {
     fetch("/api/course-builder").then((res) => res.json()).then((data) => {
@@ -48,12 +47,22 @@ export default function ContentManager() {
     if (!activeChapter) return alert("Select a Chapter first.");
     const res = await fetch("/api/course-builder/lesson", { 
       method: "POST", headers: { "Content-Type": "application/json" }, 
-      body: JSON.stringify({ title: lessonTitle, chapterId: activeChapter, videoUrl, pdfUrl, orderIndex: 1, isLive: broadcastType !== "VOD", liveUrl, broadcastType, scheduledStartTime: scheduledTime || null }) 
+      body: JSON.stringify({ 
+        title: lessonTitle, 
+        chapterId: activeChapter, 
+        videoUrl, 
+        pdfUrl, 
+        orderIndex: 1, 
+        isLive: broadcastType !== "VOD", 
+        liveUrl: "", 
+        broadcastType, 
+        scheduledStartTime: scheduledTime || null 
+      }) 
     });
     const data = await res.json();
     if (data.error) alert("Deployment Failed: " + data.error + " | " + data.details);
     else { 
-      setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); setBroadcastType("VOD"); setScheduledTime(""); setLiveUrl("");
+      setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); setBroadcastType("VOD"); setScheduledTime("");
       alert("Content Deployed Successfully."); 
       loadData(); 
     }
@@ -117,22 +126,37 @@ export default function ContentManager() {
               <input type="text" required value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} placeholder="e.g., Quantum Mechanics 101" className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 font-medium text-sm" />
             </div>
 
-            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setIsLive(!isLive)}>
-              <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${isLive ? 'bg-red-600 text-white border-transparent' : 'border-2 border-slate-300 bg-white'}`}>
-                {isLive && "✓"}
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Lesson Type</label>
+              <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl">
+                <button type="button" onClick={() => setBroadcastType("VOD")} className={`py-2 text-xs font-bold rounded-lg transition-colors ${broadcastType === "VOD" ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>VOD</button>
+                <button type="button" onClick={() => setBroadcastType("NATIVE_WEBRTC")} className={`py-2 text-xs font-bold rounded-lg transition-colors ${broadcastType === "NATIVE_WEBRTC" ? 'bg-red-500 text-white shadow-sm animate-pulse' : 'text-slate-500'}`}>In-House Live</button>
+                <button type="button" onClick={() => setBroadcastType("PRE_RECORDED_LIVE")} className={`py-2 text-xs font-bold rounded-lg transition-colors ${broadcastType === "PRE_RECORDED_LIVE" ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500'}`}>Scheduled Playout</button>
               </div>
-              <span className="text-sm font-bold text-slate-900">This is a Live Broadcast</span>
             </div>
 
-            {isLive ? (
-              <div className="animate-in slide-in-from-top-2 duration-300">
-                <label className="block text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></div> Live Stream URL
-                </label>
-                <input type="url" required={isLive} value={liveUrl} onChange={e => setLiveUrl(e.target.value)} placeholder="https://youtube.com/embed/..." className="w-full border border-red-300 bg-red-50 rounded-xl p-3 outline-none focus:border-red-500 font-bold text-sm text-red-900" />
+            {broadcastType === "NATIVE_WEBRTC" && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-xs font-bold">
+                Deploy this lesson to make it appear in your Broadcast Studio. You will use your hardware camera and screen share to stream this session natively.
               </div>
-            ) : (
-              <div className="animate-in slide-in-from-top-2 duration-300">
+            )}
+            
+            {broadcastType === "PRE_RECORDED_LIVE" && (
+              <div className="space-y-4 animate-in slide-in-from-top-2">
+                <div>
+                  <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Upload Source MP4 (Database Video URL)</label>
+                  <input type="url" required={broadcastType === "PRE_RECORDED_LIVE"} value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://your-storage.com/video.mp4" className="w-full border border-blue-300 bg-blue-50 rounded-xl p-3 outline-none focus:border-blue-500 font-medium text-sm text-blue-900" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Scheduled Live Start Time</label>
+                  <input type="datetime-local" required={broadcastType === "PRE_RECORDED_LIVE"} value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} className="w-full border border-blue-300 bg-blue-50 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-sm text-blue-900" />
+                </div>
+                <div className="text-[10px] font-bold text-slate-500 leading-tight">The platform will lock this video until the scheduled time. At the exact time, it will automatically initiate a live playout for all enrolled students.</div>
+              </div>
+            )}
+
+            {broadcastType === "VOD" && (
+              <div className="animate-in slide-in-from-top-2">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Video URL (VOD) <span className="text-slate-400 normal-case font-medium">(Optional)</span></label>
                 <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://..." className="w-full border border-slate-300 rounded-xl p-3 outline-none focus:border-blue-500 font-medium text-sm" />
               </div>
