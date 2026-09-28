@@ -85,6 +85,8 @@ model Lesson {
   pdfUrl     String?
   isLive Boolean @default(false)
   liveUrl String?
+  broadcastType String @default("URL") // URL, NATIVE_WEBRTC, or PRE_RECORDED_LIVE
+  scheduledStartTime DateTime?
 }
 
 model Quiz {

@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const session = await verifyServerAuth();
     if (!session || (session.role !== "ADMIN" && session.role !== "TEACHER")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { title, chapterId, videoUrl, pdfUrl, orderIndex, isLive, liveUrl } = await req.json();
+    const { title, chapterId, videoUrl, pdfUrl, orderIndex, isLive, liveUrl, broadcastType, scheduledStartTime } = await req.json();
     await prisma.lesson.create({
       data: { 
         title, chapterId, 
@@ -15,7 +15,9 @@ export async function POST(req: Request) {
         pdfUrl: pdfUrl || "", 
         orderIndex: orderIndex || 1,
         isLive: isLive || false,
-        liveUrl: liveUrl || ""
+        liveUrl: liveUrl || "",
+        broadcastType: broadcastType || "URL",
+        scheduledStartTime: scheduledStartTime ? new Date(scheduledStartTime) : null
       } as any
     });
     return NextResponse.json({ success: true });

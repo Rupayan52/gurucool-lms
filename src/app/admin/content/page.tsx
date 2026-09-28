@@ -14,7 +14,8 @@ export default function ContentManager() {
   const [pdfUrl, setPdfUrl] = useState("");
   
   // Live Broadcast States
-  const [isLive, setIsLive] = useState(false);
+  const [broadcastType, setBroadcastType] = useState("VOD");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [liveUrl, setLiveUrl] = useState("");
 
   const loadData = () => {
@@ -47,12 +48,12 @@ export default function ContentManager() {
     if (!activeChapter) return alert("Select a Chapter first.");
     const res = await fetch("/api/course-builder/lesson", { 
       method: "POST", headers: { "Content-Type": "application/json" }, 
-      body: JSON.stringify({ title: lessonTitle, chapterId: activeChapter, videoUrl, pdfUrl, orderIndex: 1, isLive, liveUrl }) 
+      body: JSON.stringify({ title: lessonTitle, chapterId: activeChapter, videoUrl, pdfUrl, orderIndex: 1, isLive: broadcastType !== "VOD", liveUrl, broadcastType, scheduledStartTime: scheduledTime || null }) 
     });
     const data = await res.json();
     if (data.error) alert("Deployment Failed: " + data.error + " | " + data.details);
     else { 
-      setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); setIsLive(false); setLiveUrl("");
+      setLessonTitle(""); setVideoUrl(""); setPdfUrl(""); setBroadcastType("VOD"); setScheduledTime(""); setLiveUrl("");
       alert("Content Deployed Successfully."); 
       loadData(); 
     }
