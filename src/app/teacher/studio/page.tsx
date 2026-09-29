@@ -1,7 +1,41 @@
 "use client";
 import { useEffect, useState } from "react";
-import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
+import { 
+  LiveKitRoom, 
+  RoomAudioRenderer, 
+  ControlBar, 
+  GridLayout, 
+  ParticipantTile,
+  useTracks,
+  ConnectionStateToast
+} from "@livekit/components-react";
+import { Track } from "livekit-client";
 import "@livekit/components-styles";
+
+// Custom Atomic UI replacing the buggy black-box component
+function CustomBroadcastLayout() {
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false }
+  );
+
+  return (
+    <div className="flex flex-col h-full w-full bg-black">
+      <div className="flex-1 p-2">
+        <GridLayout tracks={tracks} style={{ height: '100%' }}>
+          <ParticipantTile />
+        </GridLayout>
+      </div>
+      {/* Explicitly forcing the hardware controls to render */}
+      <div className="bg-slate-950 border-t border-slate-800 p-2 flex justify-center">
+        <ControlBar controls={{ microphone: true, camera: true, screenShare: true }} />
+      </div>
+    </div>
+  );
+}
 
 export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
@@ -13,24 +47,31 @@ export default function EnterpriseBroadcastStudio() {
   }, []);
 
   const goLive = async (lessonId: string) => {
-    // BUG FIX: Explicitly request broadcaster rights to unlock Camera/Mic controls
+    setToken(""); // Clear any stale tokens
     const res = await fetch(`/api/livekit?room=${lessonId}&broadcaster=true`);
     const data = await res.json();
     if (data.error) return alert("System Auth Error: " + data.error);
+    
     setToken(data.token);
     setActiveRoom(lessonId);
   };
 
+  const handleDisconnect = () => {
+    setToken("");
+    setActiveRoom(null);
+  };
+
   if (token && activeRoom) {
     return (
-      <div className="h-screen w-full bg-slate-950 flex flex-col">
-        <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white z-10">
+      // Added 'fixed inset-0 z-50' to make it true full-screen like a Zoom call
+      <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-50">
+        <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
-            <h1 className="font-black tracking-widest uppercase">Live Transmission Active</h1>
+            <h1 className="font-black tracking-widest uppercase">Live Transmission: {activeRoom}</h1>
           </div>
-          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors shadow-lg">
-            Terminate Broadcast
+          <button onClick={handleDisconnect} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors shadow-lg">
+            End Broadcast
           </button>
         </div>
         
@@ -43,8 +84,11 @@ export default function EnterpriseBroadcastStudio() {
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
             style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            onDisconnected={handleDisconnect}
           >
-            <VideoConference />
+            {/* Visual indicator of WebSocket connection status */}
+            <ConnectionStateToast />
+            <CustomBroadcastLayout />
             <RoomAudioRenderer />
           </LiveKitRoom>
         </div>

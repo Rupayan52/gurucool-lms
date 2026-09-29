@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
 import { verifyServerAuth } from "@/lib/auth";
 
-// FORCE VERCEL TO NEVER CACHE THIS ROUTE
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
@@ -12,7 +11,6 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const room = url.searchParams.get("room");
-    // Explicitly check if the request is coming from the Teacher Studio
     const isBroadcaster = url.searchParams.get("broadcaster") === "true";
 
     if (!room) return NextResponse.json({ error: "Room ID is required" }, { status: 400 });
@@ -25,11 +23,11 @@ export async function GET(req: Request) {
     }
 
     const at = new AccessToken(apiKey, apiSecret, {
-      identity: session.userId || `user_${Math.random()}`,
+      // Appending a timestamp prevents LiveKit from freezing if you accidentally open two tabs
+      identity: `${session.userId || 'user'}_${Date.now()}`,
       name: (session as any).name || (isBroadcaster ? "Faculty Member" : "Student"),
     });
 
-    // Generate JWT with forced publish rights if requested
     at.addGrant({ 
       roomJoin: true, 
       room, 
