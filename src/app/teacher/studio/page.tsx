@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
+import { LiveKitRoom, VideoConference, RoomAudioRenderer, PreJoin, LocalUserChoices } from "@livekit/components-react";
 import "@livekit/components-styles";
 
 export default function EnterpriseBroadcastStudio() {
@@ -8,6 +8,9 @@ export default function EnterpriseBroadcastStudio() {
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [token, setToken] = useState("");
   const [networkError, setNetworkError] = useState("");
+  
+  // State to hold the user's hardware choices from the PreJoin screen
+  const [preJoinChoices, setPreJoinChoices] = useState<LocalUserChoices | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/teacher/studio").then(r => r.json()).then(setLiveLessons);
@@ -16,6 +19,7 @@ export default function EnterpriseBroadcastStudio() {
   const goLive = async (lessonId: string) => {
     setToken("");
     setNetworkError("");
+    setPreJoinChoices(undefined);
     const res = await fetch(`/api/livekit?room=${lessonId}&bust=${Date.now()}`);
     const data = await res.json();
     if (data.error) return alert("API Error: " + data.error);
@@ -26,37 +30,64 @@ export default function EnterpriseBroadcastStudio() {
   if (token && activeRoom) {
     const hardcodedUrl = "wss://gurucool-lms-tx4rja80.livekit.cloud";
 
+    // ==========================================
+    // PHASE 1: THE PRE-JOIN WAITING ROOM
+    // Resolves hardware permissions safely before connecting to the server
+    // ==========================================
+    if (!preJoinChoices) {
+      return (
+        <div className="h-screen w-full bg-slate-950 flex flex-col items-center justify-center fixed inset-0 z-[100] p-4">
+          <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+            <h1 className="text-2xl font-black text-white text-center mb-6 uppercase tracking-widest">Hardware Setup</h1>
+            
+            {/* Official LiveKit PreJoin Component */}
+            <div className="rounded-xl overflow-hidden shadow-lg border border-slate-700 bg-black">
+              <PreJoin
+                onError={(err) => alert("Hardware Error: " + err.message)}
+                onSubmit={(values) => setPreJoinChoices(values)}
+              />
+            </div>
+
+            <button onClick={() => { setToken(""); setActiveRoom(null); }} className="mt-8 w-full text-red-500 hover:text-red-400 font-bold uppercase tracking-widest text-xs transition-colors">
+              Cancel Broadcast
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // PHASE 2: THE LIVE BROADCAST STUDIO
+    // ==========================================
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
         <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-4">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
             <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Live: {activeRoom}</h1>
           </div>
-          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
+          <button onClick={() => { setToken(""); setActiveRoom(null); setPreJoinChoices(undefined); }} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
             End Broadcast
           </button>
         </div>
         
-        {/* DIAGNOSTIC OVERLAY */}
         {networkError && (
           <div className="bg-red-600 text-white font-black p-4 text-center text-sm uppercase tracking-widest z-50 shadow-xl">
-            WebSocket Connection Dropped. Reason Code: {networkError}
+            Connection Issue: {networkError}
           </div>
         )}
 
         <div className="flex-1 relative flex flex-col">
           <LiveKitRoom
-            video={false} // CRITICAL FIX: Disables auto-publish to prevent OS hardware locks from crashing the socket
-            audio={false} 
+            // Passes the secure hardware choices directly into the engine
+            video={preJoinChoices.videoEnabled}
+            audio={preJoinChoices.audioEnabled}
             connect={true} 
             token={token}
             serverUrl={hardcodedUrl}
             data-lk-theme="default"
             style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
-            onDisconnected={(reason) => {
-              setNetworkError(String(reason || "Unknown Disconnect"));
-            }}
+            onDisconnected={(reason) => setNetworkError(String(reason || "Unknown Disconnect"))}
           >
             <VideoConference />
             <RoomAudioRenderer />
@@ -71,6 +102,7 @@ export default function EnterpriseBroadcastStudio() {
       <header className="mb-10 flex justify-between items-end">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">Broadcast Studio</h1>
+          <p className="mt-2 text-slate-500 font-medium text-sm sm:text-lg">Cross-Platform Enterprise Engine Active.</p>
         </div>
       </header>
       <div className="space-y-6">
@@ -81,7 +113,7 @@ export default function EnterpriseBroadcastStudio() {
               <p className="text-xs sm:text-sm text-slate-500 font-bold font-mono">{lesson.id}</p>
             </div>
             <button onClick={() => goLive(lesson.id)} className="w-full sm:w-auto bg-slate-900 hover:bg-blue-600 text-white px-10 py-4 sm:py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl">
-              Go Live
+              Enter Studio
             </button>
           </div>
         ))}
