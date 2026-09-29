@@ -8,8 +8,6 @@ export default function EnterpriseBroadcastStudio() {
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [token, setToken] = useState("");
   const [networkError, setNetworkError] = useState("");
-  
-  // State to hold the user's hardware choices from the PreJoin screen
   const [preJoinChoices, setPreJoinChoices] = useState<LocalUserChoices | undefined>(undefined);
 
   useEffect(() => {
@@ -30,21 +28,22 @@ export default function EnterpriseBroadcastStudio() {
   if (token && activeRoom) {
     const hardcodedUrl = "wss://gurucool-lms-tx4rja80.livekit.cloud";
 
-    // ==========================================
-    // PHASE 1: THE PRE-JOIN WAITING ROOM
-    // Resolves hardware permissions safely before connecting to the server
-    // ==========================================
     if (!preJoinChoices) {
       return (
         <div className="h-screen w-full bg-slate-950 flex flex-col items-center justify-center fixed inset-0 z-[100] p-4">
           <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
             <h1 className="text-2xl font-black text-white text-center mb-6 uppercase tracking-widest">Hardware Setup</h1>
             
-            {/* Official LiveKit PreJoin Component */}
             <div className="rounded-xl overflow-hidden shadow-lg border border-slate-700 bg-black">
               <PreJoin
-                onError={(err) => alert("Hardware Error: " + err.message)}
+                // CRITICAL FIX: Default to OFF so it doesn't crash on blocked hardware
+                defaults={{
+                  audioEnabled: false,
+                  videoEnabled: false,
+                }}
                 onSubmit={(values) => setPreJoinChoices(values)}
+                // Removed the ugly alert. Now it fails silently and gracefully.
+                onError={(err) => console.warn("Hardware locked by OS:", err)}
               />
             </div>
 
@@ -56,9 +55,6 @@ export default function EnterpriseBroadcastStudio() {
       );
     }
 
-    // ==========================================
-    // PHASE 2: THE LIVE BROADCAST STUDIO
-    // ==========================================
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
         <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
@@ -79,7 +75,6 @@ export default function EnterpriseBroadcastStudio() {
 
         <div className="flex-1 relative flex flex-col">
           <LiveKitRoom
-            // Passes the secure hardware choices directly into the engine
             video={preJoinChoices.videoEnabled}
             audio={preJoinChoices.audioEnabled}
             connect={true} 
