@@ -34,15 +34,14 @@ export default function EnterpriseBroadcastStudio() {
           <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
             <h1 className="text-2xl font-black text-white text-center mb-6 uppercase tracking-widest">Hardware Setup</h1>
             
-            <div className="rounded-xl overflow-hidden shadow-lg border border-slate-700 bg-black">
+            {/* CRITICAL FIX: Wrapped PreJoin in the LiveKit theme data attribute so styles render properly */}
+            <div className="rounded-xl overflow-hidden shadow-lg border-2 border-slate-700 bg-slate-950" data-lk-theme="default">
               <PreJoin
-                // CRITICAL FIX: Default to OFF so it doesn't crash on blocked hardware
                 defaults={{
                   audioEnabled: false,
                   videoEnabled: false,
                 }}
                 onSubmit={(values) => setPreJoinChoices(values)}
-                // Removed the ugly alert. Now it fails silently and gracefully.
                 onError={(err) => console.warn("Hardware locked by OS:", err)}
               />
             </div>
