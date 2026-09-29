@@ -23,24 +23,28 @@ export default function EnterpriseBroadcastStudio() {
   if (token && activeRoom) {
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col">
-        <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
+        <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white z-10">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
             <h1 className="font-black tracking-widest uppercase">Live Transmission Active</h1>
           </div>
-          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors">
+          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors shadow-lg">
             Terminate Broadcast
           </button>
         </div>
-        <div className="flex-1">
+        
+        {/* WEBRTC ENGINE */}
+        <div className="flex-1 relative">
           <LiveKitRoom
-            video={true}
-            audio={true}
+            video={false} // DO NOT auto-publish (prevents browser block)
+            audio={false} // DO NOT auto-publish
+            connect={true} // Explicitly force the WebSocket connection
             token={token}
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
-            style={{ height: '100%' }}
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
           >
+            {/* The VideoConference component automatically provides the ControlBar (Mic/Cam/Screen buttons) */}
             <VideoConference />
             <RoomAudioRenderer />
           </LiveKitRoom>
