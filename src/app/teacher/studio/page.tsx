@@ -4,7 +4,6 @@ import { LiveKitRoom, RoomAudioRenderer, VideoTrack, useTracks, useLocalParticip
 import { Track, ConnectionState } from "livekit-client";
 import "@livekit/components-styles";
 
-// 1. ZOOM-STYLE WAITING ROOM CONTROLS
 function RawHardwareControls() {
   const { localParticipant } = useLocalParticipant();
   const [camOn, setCamOn] = useState(false);
@@ -12,10 +11,13 @@ function RawHardwareControls() {
 
   const igniteHardware = async () => {
     try {
-      // BROWSER OVERRIDE: Force Chrome permission popup instantly
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Browser Media API missing. Check secure context (HTTPS).");
+      }
+      
+      // Attempt to access hardware
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      // Release lock so LiveKit can consume it
-      stream.getTracks().forEach(t => t.stop());
+      stream.getTracks().forEach(t => t.stop()); // Release lock immediately
 
       if (localParticipant) {
         await localParticipant.setMicrophoneEnabled(true);
@@ -23,8 +25,9 @@ function RawHardwareControls() {
       }
       setMicOn(true);
       setCamOn(true);
-    } catch (error) {
-      alert("Chrome strictly blocked hardware access. Click the Camera icon in your URL address bar to manually Allow it.");
+    } catch (error: any) {
+      // EXTREME VERBOSITY: Prints the exact OS-level hardware error
+      alert(`HARDWARE REJECTED BY SYSTEM:\n\nError Code: ${error.name}\nDetails: ${error.message}\n\nTROUBLESHOOTING:\n1. Close Microsoft Teams or Zoom (they hoard the camera).\n2. Ensure a physical webcam is plugged in.\n3. Check Windows Camera Privacy Settings.`);
     }
   };
 
@@ -60,23 +63,21 @@ function RawHardwareControls() {
   );
 }
 
-// 2. BULLETPROOF VIDEO GRID
 function BulletproofGrid() {
   const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const connectionState = useConnectionState();
   
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-black p-4 gap-4 w-full h-full relative">
-      {/* Network Diagnostics */}
       <div className="absolute top-4 right-4 z-50 bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-lg text-xs font-mono font-bold text-white flex items-center gap-2 shadow-2xl backdrop-blur-sm">
         <div className={`w-2 h-2 rounded-full ${connectionState === ConnectionState.Connected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse'}`}></div>
         Network: {connectionState.toUpperCase()}
       </div>
 
       {tracks.length === 0 && (
-        <div className="text-slate-500 font-black tracking-widest uppercase text-xl flex flex-col items-center gap-4">
+        <div className="text-slate-500 font-black tracking-widest uppercase text-xl flex flex-col items-center gap-4 text-center">
           <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-          Hardware Offline. Click 'Ignite' below to test camera.
+          Hardware Offline. Click 'Ignite' below to view system diagnostics.
         </div>
       )}
       
@@ -103,7 +104,13 @@ export default function EnterpriseBroadcastStudio() {
 
   const goLive = async (lessonId: string) => {
     setToken("");
-    const res = await fetch(`/api/livekit?room=${lessonId}`);
+    
+    // ABSOLUTE CACHE BUSTING: Forces Next.js to fetch the new Vercel token instead of using the broken cached one
+    const res = await fetch(`/api/livekit?room=${lessonId}&broadcaster=true&bust=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    
     const data = await res.json();
     if (data.error) return alert("System Auth Error: " + data.error);
     setToken(data.token);
