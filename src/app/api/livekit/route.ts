@@ -18,20 +18,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Enterprise WebRTC keys missing in .env" }, { status: 500 });
     }
 
-    const isTeacher = session.role === "TEACHER" || session.role === "ADMIN";
+    // BUG FIX: Added "FACULTY" to the authorization matrix. 
+    // This explicitly grants the 'canPublish' WebRTC right, unlocking the Camera/Mic controls.
+    const role = (session.role || "").toUpperCase();
+    const canPublish = role === "TEACHER" || role === "ADMIN" || role === "FACULTY";
 
-    // Generate cryptographic token
-    // Using TS bypass for 'name' fallback to satisfy strict typing
     const at = new AccessToken(apiKey, apiSecret, {
       identity: session.userId,
-      name: (session as any).name || "Participant",
+      name: (session as any).name || "Faculty Member",
     });
 
-    // Teachers can broadcast (publish), Students can only watch (subscribe)
+    // Generate JWT with corrected publish rights
     at.addGrant({ 
       roomJoin: true, 
       room, 
-      canPublish: isTeacher, 
+      canPublish: canPublish, 
       canSubscribe: true 
     });
 
