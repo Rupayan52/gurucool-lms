@@ -7,6 +7,7 @@ export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [token, setToken] = useState("");
+  const [networkError, setNetworkError] = useState("");
 
   useEffect(() => {
     fetch("/api/teacher/studio").then(r => r.json()).then(setLiveLessons);
@@ -14,6 +15,7 @@ export default function EnterpriseBroadcastStudio() {
 
   const goLive = async (lessonId: string) => {
     setToken("");
+    setNetworkError("");
     const res = await fetch(`/api/livekit?room=${lessonId}&bust=${Date.now()}`);
     const data = await res.json();
     if (data.error) return alert("API Error: " + data.error);
@@ -22,7 +24,6 @@ export default function EnterpriseBroadcastStudio() {
   };
 
   if (token && activeRoom) {
-    // HARDCODED URL to bypass Vercel environment variable corruption
     const hardcodedUrl = "wss://gurucool-lms-tx4rja80.livekit.cloud";
 
     return (
@@ -37,17 +38,24 @@ export default function EnterpriseBroadcastStudio() {
           </button>
         </div>
         
+        {/* DIAGNOSTIC OVERLAY */}
+        {networkError && (
+          <div className="bg-red-600 text-white font-black p-4 text-center text-sm uppercase tracking-widest z-50 shadow-xl">
+            WebSocket Connection Dropped. Reason Code: {networkError}
+          </div>
+        )}
+
         <div className="flex-1 relative flex flex-col">
           <LiveKitRoom
-            video={true} 
-            audio={true} 
+            video={false} // CRITICAL FIX: Disables auto-publish to prevent OS hardware locks from crashing the socket
+            audio={false} 
             connect={true} 
             token={token}
             serverUrl={hardcodedUrl}
             data-lk-theme="default"
             style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
             onDisconnected={(reason) => {
-              if (reason) console.error("LiveKit Disconnected Reason:", reason);
+              setNetworkError(String(reason || "Unknown Disconnect"));
             }}
           >
             <VideoConference />
@@ -63,7 +71,6 @@ export default function EnterpriseBroadcastStudio() {
       <header className="mb-10 flex justify-between items-end">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">Broadcast Studio</h1>
-          <p className="mt-2 text-slate-500 font-medium text-sm sm:text-lg">Hardcoded bypass deployed.</p>
         </div>
       </header>
       <div className="space-y-6">
