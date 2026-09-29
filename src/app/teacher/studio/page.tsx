@@ -1,97 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { LiveKitRoom, RoomAudioRenderer, VideoTrack, useTracks, useLocalParticipant, useConnectionState } from "@livekit/components-react";
-import { Track, ConnectionState } from "livekit-client";
+import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
 import "@livekit/components-styles";
-
-function RawHardwareControls() {
-  const { localParticipant } = useLocalParticipant();
-  const [camOn, setCamOn] = useState(false);
-  const [micOn, setMicOn] = useState(false);
-
-  const igniteHardware = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Browser Media API missing. Check secure context (HTTPS).");
-      }
-      
-      // Attempt to access hardware
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      stream.getTracks().forEach(t => t.stop()); // Release lock immediately
-
-      if (localParticipant) {
-        await localParticipant.setMicrophoneEnabled(true);
-        await localParticipant.setCameraEnabled(true);
-      }
-      setMicOn(true);
-      setCamOn(true);
-    } catch (error: any) {
-      // EXTREME VERBOSITY: Prints the exact OS-level hardware error
-      alert(`HARDWARE REJECTED BY SYSTEM:\n\nError Code: ${error.name}\nDetails: ${error.message}\n\nTROUBLESHOOTING:\n1. Close Microsoft Teams or Zoom (they hoard the camera).\n2. Ensure a physical webcam is plugged in.\n3. Check Windows Camera Privacy Settings.`);
-    }
-  };
-
-  const toggleMic = async () => {
-    if (localParticipant) await localParticipant.setMicrophoneEnabled(!micOn);
-    setMicOn(!micOn);
-  };
-
-  const toggleCam = async () => {
-    if (localParticipant) await localParticipant.setCameraEnabled(!camOn);
-    setCamOn(!camOn);
-  };
-
-  if (!camOn && !micOn) {
-    return (
-      <div className="bg-slate-900 border-t border-slate-800 p-6 flex justify-center gap-6 z-50">
-        <button onClick={igniteHardware} className="px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-          Ignite Hardware (Local Preview)
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-slate-900 border-t border-slate-800 p-6 flex justify-center gap-6 z-50">
-      <button onClick={toggleMic} className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl ${micOn ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}>
-        {micOn ? "Disable Microphone" : "Enable Microphone"}
-      </button>
-      <button onClick={toggleCam} className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-xl ${camOn ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}>
-        {camOn ? "Disable Camera" : "Enable Camera"}
-      </button>
-    </div>
-  );
-}
-
-function BulletproofGrid() {
-  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
-  const connectionState = useConnectionState();
-  
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-black p-4 gap-4 w-full h-full relative">
-      <div className="absolute top-4 right-4 z-50 bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-lg text-xs font-mono font-bold text-white flex items-center gap-2 shadow-2xl backdrop-blur-sm">
-        <div className={`w-2 h-2 rounded-full ${connectionState === ConnectionState.Connected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse'}`}></div>
-        Network: {connectionState.toUpperCase()}
-      </div>
-
-      {tracks.length === 0 && (
-        <div className="text-slate-500 font-black tracking-widest uppercase text-xl flex flex-col items-center gap-4 text-center">
-          <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-          Hardware Offline. Click 'Ignite' below to view system diagnostics.
-        </div>
-      )}
-      
-      {tracks.map((t) => (
-        <div key={t.participant.identity + t.source} className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-700 w-full max-w-6xl aspect-video relative">
-          <VideoTrack trackRef={t} className="w-full h-full object-cover" />
-          {connectionState === ConnectionState.Connected && (
-            <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest animate-pulse shadow-lg">Live Global</div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
@@ -105,7 +15,7 @@ export default function EnterpriseBroadcastStudio() {
   const goLive = async (lessonId: string) => {
     setToken("");
     
-    // ABSOLUTE CACHE BUSTING: Forces Next.js to fetch the new Vercel token instead of using the broken cached one
+    // Cache-buster ensures we always get a fresh token from Vercel
     const res = await fetch(`/api/livekit?room=${lessonId}&broadcaster=true&bust=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' }
@@ -123,49 +33,58 @@ export default function EnterpriseBroadcastStudio() {
 
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
-        <div className="p-6 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
+        <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-4">
-            <h1 className="font-black tracking-widest uppercase text-xl">Transmission: {activeRoom}</h1>
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
+            <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Transmission: {activeRoom}</h1>
           </div>
-          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-slate-800 hover:bg-red-600 px-8 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-xl">
+          <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
             End Broadcast
           </button>
         </div>
         
         <div className="flex-1 relative flex flex-col">
-          <LiveKitRoom
-            video={false} 
-            audio={false} 
-            connect={true} 
-            token={token}
-            serverUrl={safeUrl}
-            data-lk-theme="default"
-            style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
-          >
-            <BulletproofGrid />
-            <RawHardwareControls />
-            <RoomAudioRenderer />
-          </LiveKitRoom>
+          {safeUrl ? (
+            <LiveKitRoom
+              video={true} // Letting LiveKit handle the camera natively
+              audio={true} // Letting LiveKit handle the mic natively
+              connect={true} 
+              token={token}
+              serverUrl={safeUrl}
+              data-lk-theme="default"
+              style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
+            >
+              {/* This is the official, mobile-responsive Zoom-like interface */}
+              <VideoConference />
+              <RoomAudioRenderer />
+            </LiveKitRoom>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-red-500 font-black uppercase text-xl">CRITICAL ERROR: MISSING URL</div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-10 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
+    <div className="p-4 sm:p-10 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
       <header className="mb-10 flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">Enterprise Broadcast Studio</h1>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-slate-300 hidden sm:block"></div>
+            Broadcast Studio
+          </h1>
+          <p className="mt-2 text-slate-500 font-medium text-sm sm:text-lg">Mobile & Desktop WebRTC Engine Ready.</p>
         </div>
       </header>
       <div className="space-y-6">
         {liveLessons.filter(l => l.broadcastType === "NATIVE_WEBRTC").map(lesson => (
-          <div key={lesson.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 flex items-center justify-between">
+          <div key={lesson.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 mb-1">{lesson.title}</h2>
-              <p className="text-sm text-slate-500 font-bold font-mono">{lesson.id}</p>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-1">{lesson.title}</h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-bold font-mono">{lesson.id}</p>
             </div>
-            <button onClick={() => goLive(lesson.id)} className="bg-slate-900 hover:bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl">
+            <button onClick={() => goLive(lesson.id)} className="w-full sm:w-auto bg-slate-900 hover:bg-blue-600 text-white px-10 py-4 sm:py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl">
               Go Live
             </button>
           </div>
