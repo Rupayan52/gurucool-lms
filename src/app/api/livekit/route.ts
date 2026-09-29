@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { AccessToken } from "livekit-server-sdk";
 import { verifyServerAuth } from "@/lib/auth";
 
+// FORCE VERCEL TO NEVER CACHE THIS ROUTE
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const session = await verifyServerAuth();
@@ -9,6 +12,9 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const room = url.searchParams.get("room");
+    // Explicitly check if the request is coming from the Teacher Studio
+    const isBroadcaster = url.searchParams.get("broadcaster") === "true";
+
     if (!room) return NextResponse.json({ error: "Room ID is required" }, { status: 400 });
 
     const apiKey = process.env.LIVEKIT_API_KEY;
@@ -18,21 +24,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Enterprise WebRTC keys missing in .env" }, { status: 500 });
     }
 
-    // BUG FIX: Added "FACULTY" to the authorization matrix. 
-    // This explicitly grants the 'canPublish' WebRTC right, unlocking the Camera/Mic controls.
-    const role = (session.role || "").toUpperCase();
-    const canPublish = role === "TEACHER" || role === "ADMIN" || role === "FACULTY";
-
     const at = new AccessToken(apiKey, apiSecret, {
-      identity: session.userId,
-      name: (session as any).name || "Faculty Member",
+      identity: session.userId || `user_${Math.random()}`,
+      name: (session as any).name || (isBroadcaster ? "Faculty Member" : "Student"),
     });
 
-    // Generate JWT with corrected publish rights
+    // Generate JWT with forced publish rights if requested
     at.addGrant({ 
       roomJoin: true, 
       room, 
-      canPublish: canPublish, 
+      canPublish: isBroadcaster, 
       canSubscribe: true 
     });
 

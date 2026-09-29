@@ -13,7 +13,8 @@ export default function EnterpriseBroadcastStudio() {
   }, []);
 
   const goLive = async (lessonId: string) => {
-    const res = await fetch(`/api/livekit?room=${lessonId}`);
+    // BUG FIX: Explicitly request broadcaster rights to unlock Camera/Mic controls
+    const res = await fetch(`/api/livekit?room=${lessonId}&broadcaster=true`);
     const data = await res.json();
     if (data.error) return alert("System Auth Error: " + data.error);
     setToken(data.token);
@@ -33,18 +34,16 @@ export default function EnterpriseBroadcastStudio() {
           </button>
         </div>
         
-        {/* WEBRTC ENGINE */}
         <div className="flex-1 relative">
           <LiveKitRoom
-            video={false} // DO NOT auto-publish (prevents browser block)
-            audio={false} // DO NOT auto-publish
-            connect={true} // Explicitly force the WebSocket connection
+            video={false} 
+            audio={false} 
+            connect={true} 
             token={token}
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             data-lk-theme="default"
             style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
           >
-            {/* The VideoConference component automatically provides the ControlBar (Mic/Cam/Screen buttons) */}
             <VideoConference />
             <RoomAudioRenderer />
           </LiveKitRoom>
