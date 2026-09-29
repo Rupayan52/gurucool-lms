@@ -15,7 +15,6 @@ export default function EnterpriseBroadcastStudio() {
 
   const goLive = async (lessonId: string) => {
     setIsDeploying(true);
-    // 1. Ask our Next.js backend to generate a secure Daily room
     const res = await fetch(`/api/broadcast?room=${lessonId}-${Date.now()}`);
     const data = await res.json();
     
@@ -30,7 +29,6 @@ export default function EnterpriseBroadcastStudio() {
   };
 
   useEffect(() => {
-    // 2. When the URL is ready, mount the Daily.co prebuilt interface
     if (activeRoomUrl && containerRef.current) {
       const callFrame = DailyIframe.createFrame(containerRef.current, {
         iframeStyle: {
@@ -46,7 +44,6 @@ export default function EnterpriseBroadcastStudio() {
       callFrameRef.current = callFrame;
       callFrame.join({ url: activeRoomUrl });
 
-      // Automatically clean up the UI when the faculty clicks "Leave"
       callFrame.on('left-meeting', () => {
         callFrame.destroy();
         setActiveRoomUrl(null);
@@ -66,9 +63,16 @@ export default function EnterpriseBroadcastStudio() {
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
             <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Live Transmission Engine</h1>
           </div>
+          <div className="flex gap-4">
+            <a href={activeRoomUrl} target="_blank" rel="noreferrer" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl">
+              Launch in New Tab (Debug)
+            </a>
+            <button onClick={() => { if (callFrameRef.current) callFrameRef.current.destroy(); setActiveRoomUrl(null); }} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl">
+              Force Close
+            </button>
+          </div>
         </div>
         
-        {/* The Daily.co Iframe handles the PreJoin hardware check, UI, and networking natively */}
         <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800" ref={containerRef}>
         </div>
       </div>
