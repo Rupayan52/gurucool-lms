@@ -14,29 +14,23 @@ export default function EnterpriseBroadcastStudio() {
 
   const goLive = async (lessonId: string) => {
     setToken("");
-    
-    // Cache-buster ensures we always get a fresh token from Vercel
-    const res = await fetch(`/api/livekit?room=${lessonId}&broadcaster=true&bust=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' }
-    });
-    
+    const res = await fetch(`/api/livekit?room=${lessonId}&bust=${Date.now()}`);
     const data = await res.json();
-    if (data.error) return alert("System Auth Error: " + data.error);
+    if (data.error) return alert("API Error: " + data.error);
     setToken(data.token);
     setActiveRoom(lessonId);
   };
 
   if (token && activeRoom) {
-    let safeUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL || "";
-    safeUrl = safeUrl.replace("http://", "ws://").replace("https://", "wss://");
+    // HARDCODED URL to bypass Vercel environment variable corruption
+    const hardcodedUrl = "wss://gurucool-lms-tx4rja80.livekit.cloud";
 
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
         <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-4">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
-            <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Transmission: {activeRoom}</h1>
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Live: {activeRoom}</h1>
           </div>
           <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all">
             End Broadcast
@@ -44,23 +38,21 @@ export default function EnterpriseBroadcastStudio() {
         </div>
         
         <div className="flex-1 relative flex flex-col">
-          {safeUrl ? (
-            <LiveKitRoom
-              video={true} // Letting LiveKit handle the camera natively
-              audio={true} // Letting LiveKit handle the mic natively
-              connect={true} 
-              token={token}
-              serverUrl={safeUrl}
-              data-lk-theme="default"
-              style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
-            >
-              {/* This is the official, mobile-responsive Zoom-like interface */}
-              <VideoConference />
-              <RoomAudioRenderer />
-            </LiveKitRoom>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-red-500 font-black uppercase text-xl">CRITICAL ERROR: MISSING URL</div>
-          )}
+          <LiveKitRoom
+            video={true} 
+            audio={true} 
+            connect={true} 
+            token={token}
+            serverUrl={hardcodedUrl}
+            data-lk-theme="default"
+            style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
+            onDisconnected={(reason) => {
+              if (reason) console.error("LiveKit Disconnected Reason:", reason);
+            }}
+          >
+            <VideoConference />
+            <RoomAudioRenderer />
+          </LiveKitRoom>
         </div>
       </div>
     );
@@ -70,11 +62,8 @@ export default function EnterpriseBroadcastStudio() {
     <div className="p-4 sm:p-10 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
       <header className="mb-10 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-slate-300 hidden sm:block"></div>
-            Broadcast Studio
-          </h1>
-          <p className="mt-2 text-slate-500 font-medium text-sm sm:text-lg">Mobile & Desktop WebRTC Engine Ready.</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">Broadcast Studio</h1>
+          <p className="mt-2 text-slate-500 font-medium text-sm sm:text-lg">Hardcoded bypass deployed.</p>
         </div>
       </header>
       <div className="space-y-6">
