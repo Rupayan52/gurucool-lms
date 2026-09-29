@@ -4,28 +4,23 @@ import { LiveKitRoom, RoomAudioRenderer, VideoTrack, useTracks, useLocalParticip
 import { Track, ConnectionState } from "livekit-client";
 import "@livekit/components-styles";
 
-// 1. NATIVE PUNCH-THROUGH HARDWARE CONTROLS
+// 1. ZOOM-STYLE WAITING ROOM CONTROLS
 function RawHardwareControls() {
   const { localParticipant } = useLocalParticipant();
-  const connectionState = useConnectionState();
   const [camOn, setCamOn] = useState(false);
   const [micOn, setMicOn] = useState(false);
 
   const igniteHardware = async () => {
-    if (connectionState !== ConnectionState.Connected) {
-      alert(`Cannot ignite hardware. The server is currently: ${connectionState}. Check your Vercel Environment Variables.`);
-      return;
-    }
-
     try {
-      // NATIVE BROWSER OVERRIDE: Force Chrome permission popup directly via native HTML5
+      // BROWSER OVERRIDE: Force Chrome permission popup instantly
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      // Release the native lock immediately so LiveKit can take exclusive control
+      // Release lock so LiveKit can consume it
       stream.getTracks().forEach(t => t.stop());
 
-      // Inject directly into the LiveKit Engine
-      await localParticipant?.setMicrophoneEnabled(true);
-      await localParticipant?.setCameraEnabled(true);
+      if (localParticipant) {
+        await localParticipant.setMicrophoneEnabled(true);
+        await localParticipant.setCameraEnabled(true);
+      }
       setMicOn(true);
       setCamOn(true);
     } catch (error) {
@@ -34,12 +29,12 @@ function RawHardwareControls() {
   };
 
   const toggleMic = async () => {
-    await localParticipant?.setMicrophoneEnabled(!micOn);
+    if (localParticipant) await localParticipant.setMicrophoneEnabled(!micOn);
     setMicOn(!micOn);
   };
 
   const toggleCam = async () => {
-    await localParticipant?.setCameraEnabled(!camOn);
+    if (localParticipant) await localParticipant.setCameraEnabled(!camOn);
     setCamOn(!camOn);
   };
 
@@ -47,7 +42,7 @@ function RawHardwareControls() {
     return (
       <div className="bg-slate-900 border-t border-slate-800 p-6 flex justify-center gap-6 z-50">
         <button onClick={igniteHardware} className="px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-          Ignite Hardware Transmission
+          Ignite Hardware (Local Preview)
         </button>
       </div>
     );
@@ -71,17 +66,26 @@ function BulletproofGrid() {
   const connectionState = useConnectionState();
   
   return (
-    <div className="flex-1 flex items-center justify-center bg-black p-4 gap-4 w-full h-full relative">
+    <div className="flex-1 flex flex-col items-center justify-center bg-black p-4 gap-4 w-full h-full relative">
+      {/* Network Diagnostics */}
+      <div className="absolute top-4 right-4 z-50 bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-lg text-xs font-mono font-bold text-white flex items-center gap-2 shadow-2xl backdrop-blur-sm">
+        <div className={`w-2 h-2 rounded-full ${connectionState === ConnectionState.Connected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse'}`}></div>
+        Network: {connectionState.toUpperCase()}
+      </div>
+
       {tracks.length === 0 && (
-        <div className="text-slate-500 font-black tracking-widest uppercase text-xl flex flex-col items-center gap-4 animate-pulse">
+        <div className="text-slate-500 font-black tracking-widest uppercase text-xl flex flex-col items-center gap-4">
           <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-          {connectionState === ConnectionState.Connected ? "Hardware Offline. Click 'Ignite' below." : `Network Status: ${connectionState}`}
+          Hardware Offline. Click 'Ignite' below to test camera.
         </div>
       )}
+      
       {tracks.map((t) => (
         <div key={t.participant.identity + t.source} className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-700 w-full max-w-6xl aspect-video relative">
           <VideoTrack trackRef={t} className="w-full h-full object-cover" />
-          <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest animate-pulse shadow-lg">Live</div>
+          {connectionState === ConnectionState.Connected && (
+            <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-md text-xs font-black uppercase tracking-widest animate-pulse shadow-lg">Live Global</div>
+          )}
         </div>
       ))}
     </div>
@@ -114,9 +118,7 @@ export default function EnterpriseBroadcastStudio() {
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
         <div className="p-6 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-4">
-            <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,1)]"></div>
             <h1 className="font-black tracking-widest uppercase text-xl">Transmission: {activeRoom}</h1>
-            <span className="ml-4 text-xs font-mono text-slate-500 bg-slate-950 px-2 py-1 rounded">URL: {safeUrl ? safeUrl.substring(0,25) + '...' : 'MISSING URL'}</span>
           </div>
           <button onClick={() => { setToken(""); setActiveRoom(null); }} className="bg-slate-800 hover:bg-red-600 px-8 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-xl">
             End Broadcast
@@ -124,23 +126,19 @@ export default function EnterpriseBroadcastStudio() {
         </div>
         
         <div className="flex-1 relative flex flex-col">
-          {safeUrl ? (
-            <LiveKitRoom
-              video={false} 
-              audio={false} 
-              connect={true} 
-              token={token}
-              serverUrl={safeUrl}
-              data-lk-theme="default"
-              style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
-            >
-              <BulletproofGrid />
-              <RawHardwareControls />
-              <RoomAudioRenderer />
-            </LiveKitRoom>
-          ) : (
-             <div className="flex-1 flex items-center justify-center text-red-500 font-black uppercase text-xl">CRITICAL ERROR: NEXT_PUBLIC_LIVEKIT_URL IS MISSING FROM VERCEL</div>
-          )}
+          <LiveKitRoom
+            video={false} 
+            audio={false} 
+            connect={true} 
+            token={token}
+            serverUrl={safeUrl}
+            data-lk-theme="default"
+            style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
+          >
+            <BulletproofGrid />
+            <RawHardwareControls />
+            <RoomAudioRenderer />
+          </LiveKitRoom>
         </div>
       </div>
     );
@@ -150,11 +148,7 @@ export default function EnterpriseBroadcastStudio() {
     <div className="p-10 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
       <header className="mb-10 flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-slate-300"></div>
-            Enterprise Broadcast Studio
-          </h1>
-          <p className="mt-2 text-slate-500 font-medium text-lg">SFU WebRTC Engine Ready. Select a cohort to begin transmission.</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">Enterprise Broadcast Studio</h1>
         </div>
       </header>
       <div className="space-y-6">
