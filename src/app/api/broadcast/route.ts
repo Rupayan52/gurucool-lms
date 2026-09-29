@@ -21,7 +21,7 @@ export async function GET(req: Request) {
         privacy: "public",
         properties: {
           exp: Math.round(Date.now() / 1000) + 86400,
-          enable_recording: "cloud",
+          enable_recording: "local", // DOWNGRADED from 'cloud' to bypass the free-tier block
           enable_chat: true,
           enable_screenshare: true,
           start_audio_off: true,
