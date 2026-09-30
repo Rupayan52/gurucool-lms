@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Mock data to demonstrate the AI Analytics Priority Engine
 const MOCK_AI_DOUBTS = [
   { id: 1, student: "Aarav Sharma", doubt: "Can you explain the Coriolis effect on the projectile again?", aiScore: 98, analytics: "Top 5% Performer • High Engagement", status: "pending" },
   { id: 2, student: "Sneha Patel", doubt: "I didn't understand the derivation in step 4.", aiScore: 85, analytics: "Consistent Viewer • Struggling with Calculus", status: "pending" },
@@ -13,7 +12,6 @@ export default function EnterpriseBroadcastStudio() {
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [roomUrl, setRoomUrl] = useState<string>("");
   
-  // Mission Control States
   const [chatUnlocked, setChatUnlocked] = useState(false);
   const [doubtsQueue, setDoubtsQueue] = useState(MOCK_AI_DOUBTS);
 
@@ -25,20 +23,20 @@ export default function EnterpriseBroadcastStudio() {
     const uniqueRoom = `GurucoolLMS${lessonId.replace(/[^a-zA-Z0-9]/g, '')}${Date.now()}`;
     setActiveRoom(uniqueRoom);
 
-    // Strict "One-to-Many" Jitsi Config
+    // CRITICAL FIX 1: Disabled prejoin page to skip hardware test and go LIVE instantly
     const jitsiConfig = [
-      "config.prejoinPageEnabled=true",
-      "config.startWithAudioMuted=true",
-      "config.startWithVideoMuted=true", // Forces students to join with cameras off
-      "config.disableDeepLinking=true",
+      "config.prejoinPageEnabled=false",
+      "config.startWithAudioMuted=false",
+      "config.startWithVideoMuted=false",
       "userInfo.displayName=" + encodeURIComponent("Faculty Admin")
     ].join("&");
 
-    const url = `https://meet.jit.si/${uniqueRoom}#${jitsiConfig}`;
+    // CRITICAL FIX 2: Switched to FFMUC Enterprise Cluster to completely bypass the Jitsi Login Wall
+    const url = `https://meet.ffmuc.net/${uniqueRoom}#${jitsiConfig}`;
     setRoomUrl(url);
 
-    // Launch Video Engine in separate window
-    window.open(url, "_blank", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no");
+    // CRITICAL FIX 3: Opened as a standard blank tab to ensure Chrome unlocks the Screen Share API
+    window.open(url, "_blank");
   };
 
   const handleDoubtAction = (id: number, action: "resolve" | "dismiss") => {
@@ -48,7 +46,6 @@ export default function EnterpriseBroadcastStudio() {
   if (activeRoom) {
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100]">
-        {/* TOP NAVBAR */}
         <div className="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-white">
           <div className="flex items-center gap-4">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
@@ -56,7 +53,7 @@ export default function EnterpriseBroadcastStudio() {
           </div>
           <div className="flex gap-4">
             <button 
-                onClick={() => window.open(roomUrl, "_blank", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no")}
+                onClick={() => window.open(roomUrl, "_blank")}
                 className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white"
             >
                 Re-Open Video Feed
@@ -70,10 +67,7 @@ export default function EnterpriseBroadcastStudio() {
           </div>
         </div>
         
-        {/* MAIN DASHBOARD */}
         <div className="flex-1 flex overflow-hidden">
-          
-          {/* LEFT PANEL: Classroom Controls */}
           <div className="w-1/3 bg-slate-900 border-r border-slate-800 p-6 flex flex-col">
             <h2 className="text-xl font-black text-white uppercase tracking-widest mb-6">Classroom Status</h2>
             
@@ -110,7 +104,6 @@ export default function EnterpriseBroadcastStudio() {
             </div>
           </div>
 
-          {/* RIGHT PANEL: AI Doubt Queue */}
           <div className="flex-1 bg-black p-6 flex flex-col">
             <div className="flex justify-between items-end mb-6">
               <div>
@@ -151,7 +144,6 @@ export default function EnterpriseBroadcastStudio() {
               )}
             </div>
           </div>
-
         </div>
       </div>
     );
