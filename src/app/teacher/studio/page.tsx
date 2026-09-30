@@ -6,6 +6,7 @@ export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
   const [activeSession, setActiveSession] = useState<{url: string, token: string} | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [iframeFailed, setIframeFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const callFrameRef = useRef<any>(null);
 
@@ -15,8 +16,8 @@ export default function EnterpriseBroadcastStudio() {
 
   const goLive = async (lessonId: string) => {
     setIsDeploying(true);
+    setIframeFailed(false);
     
-    // Fetch both the URL and the Faculty Owner Token
     const res = await fetch(`/api/broadcast?room=${lessonId}`);
     const data = await res.json();
     
@@ -32,7 +33,6 @@ export default function EnterpriseBroadcastStudio() {
 
   useEffect(() => {
     if (activeSession && containerRef.current) {
-      // Initialize Daily with responsive mobile/desktop configuration
       const callFrame = DailyIframe.createFrame(containerRef.current, {
         iframeStyle: {
           width: '100%',
@@ -46,7 +46,12 @@ export default function EnterpriseBroadcastStudio() {
       
       callFrameRef.current = callFrame;
       
-      // THE FIX: Passing the token bypasses the iframe X-Frame-Options block entirely
+      // Catch native iframe block errors and offer the native launch fallback
+      callFrame.on('error', (e) => {
+        console.error("Daily Iframe Blocked:", e);
+        setIframeFailed(true);
+      });
+
       callFrame.join({ 
         url: activeSession.url, 
         token: activeSession.token 
@@ -55,6 +60,7 @@ export default function EnterpriseBroadcastStudio() {
       callFrame.on('left-meeting', () => {
         callFrame.destroy();
         setActiveSession(null);
+        setIframeFailed(false);
       });
     }
 
@@ -71,15 +77,31 @@ export default function EnterpriseBroadcastStudio() {
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
             <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Live Faculty Engine</h1>
           </div>
-          <button 
-            onClick={() => { if (callFrameRef.current) callFrameRef.current.destroy(); setActiveSession(null); }} 
-            className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl"
-          >
-            End Transmission
-          </button>
+          <div className="flex gap-4">
+             {/* THE ULTIMATE FAILSAFE: Launches the authenticated room natively if the iframe is ever blocked */}
+            <a 
+              href={`${activeSession.url}?t=${activeSession.token}`} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl flex items-center gap-2"
+            >
+              Launch Native Studio
+            </a>
+            <button 
+              onClick={() => { if (callFrameRef.current) callFrameRef.current.destroy(); setActiveSession(null); }} 
+              className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl"
+            >
+              End Transmission
+            </button>
+          </div>
         </div>
         
-        {/* The Native Daily Component - Protected by Owner Token */}
+        {iframeFailed && (
+          <div className="bg-amber-500 text-black font-black p-4 text-center text-sm uppercase tracking-widest z-50 shadow-xl mb-4 rounded-lg">
+            Browser Blocked Embedded View. Click "Launch Native Studio" Above to Go Live immediately.
+          </div>
+        )}
+
         <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800" ref={containerRef}>
         </div>
       </div>
