@@ -5,12 +5,14 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const roomName = url.searchParams.get("room") || `lesson-${Math.floor(Math.random() * 10000)}`;
+    const lessonId = url.searchParams.get("room") || `room-${Date.now()}`;
+    const roomName = `lms-${lessonId.replace(/[^a-zA-Z0-9-]/g, '').toLowerCase()}`; // Sanitize for Daily
 
     const apiKey = process.env.DAILY_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "Daily API Key missing" }, { status: 500 });
+    if (!apiKey) return NextResponse.json({ error: "CRITICAL: DAILY_API_KEY is missing in Vercel." }, { status: 500 });
 
-    const response = await fetch("https://api.daily.co/v1/rooms", {
+    // STEP 1: Provision the Serverless Room
+    const roomRes = await fetch("https://api.daily.co/v1/rooms", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -20,20 +22,45 @@ export async function GET(req: Request) {
         name: roomName,
         privacy: "public",
         properties: {
-          exp: Math.round(Date.now() / 1000) + 86400,
-          // Removed the enable_recording property entirely to bypass the Daily Free Tier block
+          exp: Math.round(Date.now() / 1000) + (86400 * 2), // 48 hour expiry
           enable_chat: true,
           enable_screenshare: true,
-          start_audio_off: true,
-          start_video_off: true,
+          start_audio_off: false,
+          start_video_off: false,
         },
       }),
     });
 
-    const room = await response.json();
-    if (room.error) throw new Error(room.info || room.error);
+    const room = await roomRes.json();
+    if (room.error && room.error !== "invalid-request-error") {
+      throw new Error(room.info || room.error);
+    }
 
-    return NextResponse.json({ url: room.url, roomName: room.name });
+    const finalRoomUrl = room.url;
+
+    // STEP 2: Generate the cryptographic Owner Token (The Silver Bullet)
+    const tokenRes = await fetch("https://api.daily.co/v1/meeting-tokens", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        properties: {
+          room_name: roomName,
+          is_owner: true, // Forces the iframe to bypass all locks
+          user_name: "Faculty Admin",
+        },
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    if (tokenData.error) throw new Error("Token Generation Failed: " + tokenData.info);
+
+    return NextResponse.json({ 
+      url: finalRoomUrl, 
+      token: tokenData.token 
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
