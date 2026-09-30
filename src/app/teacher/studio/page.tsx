@@ -1,108 +1,76 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
-import DailyIframe from "@daily-co/daily-js";
+import { useEffect, useState } from "react";
+import { JitsiMeeting } from "@jitsi/react-sdk";
 
 export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
-  const [activeSession, setActiveSession] = useState<{url: string, token: string} | null>(null);
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [iframeFailed, setIframeFailed] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const callFrameRef = useRef<any>(null);
+  const [activeRoom, setActiveRoom] = useState<string | null>(null);
+  const [sessionType, setSessionType] = useState<"LIVE_CLASS" | "DOUBT_SOLVING">("LIVE_CLASS");
 
   useEffect(() => {
     fetch("/api/teacher/studio").then(r => r.json()).then(setLiveLessons);
   }, []);
 
-  const goLive = async (lessonId: string) => {
-    setIsDeploying(true);
-    setIframeFailed(false);
-    
-    const res = await fetch(`/api/broadcast?room=${lessonId}`);
-    const data = await res.json();
-    
-    if (data.error) {
-      alert("System Architecture Error: " + data.error);
-      setIsDeploying(false);
-      return;
-    }
-    
-    setActiveSession({ url: data.url, token: data.token });
-    setIsDeploying(false);
+  const launchSession = (lessonId: string, type: "LIVE_CLASS" | "DOUBT_SOLVING") => {
+    // Generate a unique, sanitized room name for the Jitsi server
+    const uniqueRoom = `Gurucool-LMS-${lessonId.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`;
+    setSessionType(type);
+    setActiveRoom(uniqueRoom);
   };
 
-  useEffect(() => {
-    if (activeSession && containerRef.current) {
-      const callFrame = DailyIframe.createFrame(containerRef.current, {
-        iframeStyle: {
-          width: '100%',
-          height: '100%',
-          border: '0',
-          borderRadius: '12px',
-        },
-        showLeaveButton: true,
-        showFullscreenButton: true,
-      });
-      
-      callFrameRef.current = callFrame;
-      
-      // Catch native iframe block errors and offer the native launch fallback
-      callFrame.on('error', (e) => {
-        console.error("Daily Iframe Blocked:", e);
-        setIframeFailed(true);
-      });
-
-      callFrame.join({ 
-        url: activeSession.url, 
-        token: activeSession.token 
-      });
-
-      callFrame.on('left-meeting', () => {
-        callFrame.destroy();
-        setActiveSession(null);
-        setIframeFailed(false);
-      });
-    }
-
-    return () => {
-      if (callFrameRef.current) callFrameRef.current.destroy();
-    };
-  }, [activeSession]);
-
-  if (activeSession) {
+  if (activeRoom) {
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100] p-4 sm:p-8">
         <div className="flex justify-between items-center text-white mb-4">
           <div className="flex items-center gap-4">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)]"></div>
-            <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">Live Faculty Engine</h1>
+            <div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,1)] ${sessionType === 'LIVE_CLASS' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+            <h1 className="font-black tracking-widest uppercase text-sm sm:text-lg">
+              {sessionType === "LIVE_CLASS" ? "Live Broadcast Mode" : "Interactive Doubt Solving"}
+            </h1>
           </div>
-          <div className="flex gap-4">
-             {/* THE ULTIMATE FAILSAFE: Launches the authenticated room natively if the iframe is ever blocked */}
-            <a 
-              href={`${activeSession.url}?t=${activeSession.token}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl flex items-center gap-2"
-            >
-              Launch Native Studio
-            </a>
-            <button 
-              onClick={() => { if (callFrameRef.current) callFrameRef.current.destroy(); setActiveSession(null); }} 
-              className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl"
-            >
-              End Transmission
-            </button>
-          </div>
+          <button 
+            onClick={() => setActiveRoom(null)} 
+            className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all text-white shadow-xl"
+          >
+            End Session
+          </button>
         </div>
         
-        {iframeFailed && (
-          <div className="bg-amber-500 text-black font-black p-4 text-center text-sm uppercase tracking-widest z-50 shadow-xl mb-4 rounded-lg">
-            Browser Blocked Embedded View. Click "Launch Native Studio" Above to Go Live immediately.
-          </div>
-        )}
-
-        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800" ref={containerRef}>
+        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+          <JitsiMeeting
+            domain="meet.jit.si"
+            roomName={activeRoom}
+            configOverwrite={{
+              startWithAudioMuted: true,
+              startWithVideoMuted: false,
+              prejoinPageEnabled: true, // Native hardware testing screen
+              disableModeratorIndicator: false,
+              // If it's a Live Class, we restrict the interface for viewers
+              ...(sessionType === "LIVE_CLASS" ? {
+                disableDeepLinking: true,
+                hideConferenceTimer: true,
+              } : {})
+            }}
+            interfaceConfigOverwrite={{
+              DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+              SHOW_CHROME_EXTENSION_BANNER: false,
+              // Clean up the UI
+              TOOLBAR_BUTTONS: [
+                'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+                'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
+                'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
+                'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
+                'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone'
+              ]
+            }}
+            userInfo={{
+              displayName: 'Faculty Admin'
+            }}
+            getIFrameRef={(iframeRef) => {
+              iframeRef.style.height = '100%';
+              iframeRef.style.width = '100%';
+            }}
+          />
         </div>
       </div>
     );
@@ -117,7 +85,7 @@ export default function EnterpriseBroadcastStudio() {
       
       <div className="grid grid-cols-1 gap-6">
         {liveLessons.filter(l => l.broadcastType === "NATIVE_WEBRTC").map(lesson => (
-          <div key={lesson.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div key={lesson.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col items-start justify-between gap-6">
             <div className="w-full">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900">{lesson.title}</h2>
               <div className="flex gap-2 mt-2">
@@ -125,13 +93,20 @@ export default function EnterpriseBroadcastStudio() {
                 <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full font-mono">{lesson.id}</span>
               </div>
             </div>
-            <button 
-              onClick={() => goLive(lesson.id)} 
-              disabled={isDeploying}
-              className="w-full sm:w-auto bg-slate-900 hover:bg-blue-600 disabled:bg-slate-400 text-white px-10 py-4 sm:py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl whitespace-nowrap"
-            >
-              {isDeploying ? "Authenticating..." : "Start Session"}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
+              <button 
+                onClick={() => launchSession(lesson.id, "LIVE_CLASS")} 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-lg"
+              >
+                Launch Live Class
+              </button>
+              <button 
+                onClick={() => launchSession(lesson.id, "DOUBT_SOLVING")} 
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-lg"
+              >
+                Start Doubt Solving (Zoom)
+              </button>
+            </div>
           </div>
         ))}
       </div>
