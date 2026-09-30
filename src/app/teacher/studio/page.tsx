@@ -5,30 +5,33 @@ export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [sessionType, setSessionType] = useState<"LIVE_CLASS" | "DOUBT_SOLVING">("LIVE_CLASS");
+  const [roomUrl, setRoomUrl] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/teacher/studio").then(r => r.json()).then(setLiveLessons);
   }, []);
 
   const launchSession = (lessonId: string, type: "LIVE_CLASS" | "DOUBT_SOLVING") => {
-    // Generates a strictly alphanumeric room name to guarantee Jitsi routing works
     const uniqueRoom = `GurucoolLMS${lessonId.replace(/[^a-zA-Z0-9]/g, '')}${Date.now()}`;
     setSessionType(type);
     setActiveRoom(uniqueRoom);
-  };
 
-  if (activeRoom) {
-    // 100% Bulletproof Native Jitsi URL Configuration
-    // We pass configs directly via the URL hash, bypassing all React SDK bugs
+    // Strict Jitsi configuration parameters
     const jitsiConfig = [
       "config.prejoinPageEnabled=true",
       "config.disableDeepLinking=true",
       "config.startWithAudioMuted=true",
-      "userInfo.displayName=Faculty_Admin"
+      "userInfo.displayName=" + encodeURIComponent("Faculty Admin")
     ].join("&");
 
-    const iframeSrc = `https://meet.jit.si/${activeRoom}#${jitsiConfig}`;
+    const url = `https://meet.jit.si/${uniqueRoom}#${jitsiConfig}`;
+    setRoomUrl(url);
 
+    // THE FIX: Launches immediately in a focused, clean app window, bypassing all iframe blocks globally
+    window.open(url, "_blank", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no");
+  };
+
+  if (activeRoom) {
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100] p-4 sm:p-8">
         <div className="flex justify-between items-center text-white mb-4">
@@ -46,15 +49,23 @@ export default function EnterpriseBroadcastStudio() {
           </button>
         </div>
         
-        {/* NATIVE IFRAME: Immune to React strict mode, immune to SDK script crashes */}
-        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 relative">
-          <iframe
-            src={iframeSrc}
-            // CRITICAL: Natively forces the browser to unlock hardware for the iframe
-            allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
-            className="absolute inset-0 w-full h-full border-0"
-            style={{ backgroundColor: 'black' }}
-          />
+        {/* Clean UI showing the broadcast is running natively */}
+        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <svg className="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </div>
+            <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-widest">Session Active</h2>
+            <p className="text-slate-400 max-w-lg mb-8 text-lg">
+              Your secure broadcast environment has been launched in a native application window to bypass all browser security restrictions.
+            </p>
+            <div className="flex gap-4">
+                <button 
+                    onClick={() => window.open(roomUrl, "_blank", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no")}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)]"
+                >
+                    Re-Open Studio Window
+                </button>
+            </div>
         </div>
       </div>
     );
