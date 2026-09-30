@@ -43,9 +43,8 @@ export default function EnterpriseBroadcastStudio() {
             configOverwrite={{
               startWithAudioMuted: true,
               startWithVideoMuted: false,
-              prejoinPageEnabled: true, // Native hardware testing screen
+              prejoinPageEnabled: true,
               disableModeratorIndicator: false,
-              // If it's a Live Class, we restrict the interface for viewers
               ...(sessionType === "LIVE_CLASS" ? {
                 disableDeepLinking: true,
                 hideConferenceTimer: true,
@@ -54,7 +53,6 @@ export default function EnterpriseBroadcastStudio() {
             interfaceConfigOverwrite={{
               DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
               SHOW_CHROME_EXTENSION_BANNER: false,
-              // Clean up the UI
               TOOLBAR_BUTTONS: [
                 'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
                 'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
@@ -64,7 +62,8 @@ export default function EnterpriseBroadcastStudio() {
               ]
             }}
             userInfo={{
-              displayName: 'Faculty Admin'
+              displayName: 'Faculty Admin',
+              email: 'admin@gurucool.com' // CRITICAL FIX: Satisfies the TypeScript requirement
             }}
             getIFrameRef={(iframeRef) => {
               iframeRef.style.height = '100%';
