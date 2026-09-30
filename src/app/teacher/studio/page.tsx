@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { JitsiMeeting } from "@jitsi/react-sdk";
 
 export default function EnterpriseBroadcastStudio() {
   const [liveLessons, setLiveLessons] = useState<any[]>([]);
@@ -12,13 +11,24 @@ export default function EnterpriseBroadcastStudio() {
   }, []);
 
   const launchSession = (lessonId: string, type: "LIVE_CLASS" | "DOUBT_SOLVING") => {
-    // Generate a unique, sanitized room name for the Jitsi server
-    const uniqueRoom = `Gurucool-LMS-${lessonId.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`;
+    // Generates a strictly alphanumeric room name to guarantee Jitsi routing works
+    const uniqueRoom = `GurucoolLMS${lessonId.replace(/[^a-zA-Z0-9]/g, '')}${Date.now()}`;
     setSessionType(type);
     setActiveRoom(uniqueRoom);
   };
 
   if (activeRoom) {
+    // 100% Bulletproof Native Jitsi URL Configuration
+    // We pass configs directly via the URL hash, bypassing all React SDK bugs
+    const jitsiConfig = [
+      "config.prejoinPageEnabled=true",
+      "config.disableDeepLinking=true",
+      "config.startWithAudioMuted=true",
+      "userInfo.displayName=Faculty_Admin"
+    ].join("&");
+
+    const iframeSrc = `https://meet.jit.si/${activeRoom}#${jitsiConfig}`;
+
     return (
       <div className="h-screen w-full bg-slate-950 flex flex-col fixed inset-0 z-[100] p-4 sm:p-8">
         <div className="flex justify-between items-center text-white mb-4">
@@ -36,39 +46,14 @@ export default function EnterpriseBroadcastStudio() {
           </button>
         </div>
         
-        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
-          <JitsiMeeting
-            domain="meet.jit.si"
-            roomName={activeRoom}
-            configOverwrite={{
-              startWithAudioMuted: true,
-              startWithVideoMuted: false,
-              prejoinPageEnabled: true,
-              disableModeratorIndicator: false,
-              ...(sessionType === "LIVE_CLASS" ? {
-                disableDeepLinking: true,
-                hideConferenceTimer: true,
-              } : {})
-            }}
-            interfaceConfigOverwrite={{
-              DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-              SHOW_CHROME_EXTENSION_BANNER: false,
-              TOOLBAR_BUTTONS: [
-                'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-                'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
-                'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-                'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
-                'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone'
-              ]
-            }}
-            userInfo={{
-              displayName: 'Faculty Admin',
-              email: 'admin@gurucool.com' // CRITICAL FIX: Satisfies the TypeScript requirement
-            }}
-            getIFrameRef={(iframeRef) => {
-              iframeRef.style.height = '100%';
-              iframeRef.style.width = '100%';
-            }}
+        {/* NATIVE IFRAME: Immune to React strict mode, immune to SDK script crashes */}
+        <div className="flex-1 w-full bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800 relative">
+          <iframe
+            src={iframeSrc}
+            // CRITICAL: Natively forces the browser to unlock hardware for the iframe
+            allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
+            className="absolute inset-0 w-full h-full border-0"
+            style={{ backgroundColor: 'black' }}
           />
         </div>
       </div>
