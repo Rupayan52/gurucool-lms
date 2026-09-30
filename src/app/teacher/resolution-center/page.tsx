@@ -1,8 +1,19 @@
 "use client";
 import { useState } from "react";
 
+// CRITICAL FIX: Explicitly tell TypeScript that meetUrl can be a string OR null
+interface DoubtTicket {
+  id: string;
+  student: string;
+  course: string;
+  time: string;
+  text: string;
+  status: string;
+  meetUrl: string | null;
+}
+
 // Mock database of student doubts coming from the student portal
-const INITIAL_DOUBTS = [
+const INITIAL_DOUBTS: DoubtTicket[] = [
   { 
     id: "TKT-8992", 
     student: "Vikram S.", 
@@ -24,7 +35,7 @@ const INITIAL_DOUBTS = [
 ];
 
 export default function ResolutionCenter() {
-  const [doubts, setDoubts] = useState(INITIAL_DOUBTS);
+  const [doubts, setDoubts] = useState<DoubtTicket[]>(INITIAL_DOUBTS);
   const [activeTab, setActiveTab] = useState<"open" | "resolved">("open");
 
   // Instantly provisions a 1-on-1 Zoom-style room and attaches it to the ticket
