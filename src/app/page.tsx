@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import Link from "next/link"; // CRITICAL FIX: Next.js routing component
+import Link from "next/link"; 
 
 export default function LandingPage() {
   const [activeModalVideo, setActiveModalVideo] = useState<string | null>(null);
@@ -40,15 +40,15 @@ export default function LandingPage() {
             Learn. Explore. Grow. Lead.
           </p>
 
-          {/* THE FIX: Functional Next.js Links wrapped around the buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link href="/register" className="flex-1 sm:flex-none w-full">
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.25)]">
+          {/* THE ALIGNMENT FIX: Strictly centered flex layout with auto-sizing wrappers */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-md sm:max-w-none mx-auto">
+            <Link href="/register" className="w-full sm:w-auto">
+              <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.25)] block">
                 Register yourself
               </button>
             </Link>
-            <Link href="/login" className="flex-1 sm:flex-none w-full">
-              <button className="w-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-sm">
+            <Link href="/login" className="w-full sm:w-auto">
+              <button className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-sm block">
                 Login as Student/Faculty
               </button>
             </Link>
