@@ -36,7 +36,6 @@ export default function StudentDashboard() {
         if (metricsRes?.ok) {
           setMetrics(await metricsRes.json());
         } else {
-          // PRODUCTION EMPTY STATE: No fake data.
           setMetrics({
             studyVelocityHours: null, velocityVsLastWeek: null,
             assessmentAccuracy: null, accuracyPercentile: null,
@@ -64,17 +63,13 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-900 pb-20 selection:bg-blue-200">
       
-      {/* ================= EXACT HEADER MATCH ================= */}
       <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="w-full px-6 h-[72px] flex items-center justify-between">
-          
-          {/* Left: Hamburger & Logo */}
           <div className="flex items-center gap-4">
             <button className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-slate-50 transition-colors active:scale-95">
               <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
             <div className="flex items-center gap-2 ml-2 cursor-pointer">
-              {/* Fallback geometric logo if the actual image asset isn't loaded */}
               <div className="flex -space-x-2">
                 <div className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-amber-200 to-amber-400"></div>
                 <div className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-indigo-600"></div>
@@ -86,7 +81,6 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Center: Date & Navigation Links */}
           <div className="hidden lg:flex items-center gap-8 text-[15px] font-bold text-slate-500">
             <span className="text-slate-400 font-medium mr-4">{today}</span>
             <Link href="/student/player" className="hover:text-blue-600 transition-colors flex items-center gap-2">
@@ -100,7 +94,6 @@ export default function StudentDashboard() {
             </Link>
           </div>
 
-          {/* Right: Profile Badge */}
           <div className="flex items-center gap-3 border border-slate-200 rounded-full p-1 pr-5 hover:shadow-md transition-shadow cursor-pointer bg-white active:scale-95">
             <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-sm shadow-inner">
               RU
@@ -114,23 +107,19 @@ export default function StudentDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
-        
-        {/* ================= TITLE ================= */}
         <div className="mb-10 animate-in slide-in-from-bottom-4 fade-in duration-700 ease-out">
           <h2 className="text-[40px] font-black tracking-tight text-[#0F172A] mb-1">AI Insights & Mastery</h2>
           <p className="text-lg text-slate-500 font-medium">Your learning trajectory, quantified.</p>
         </div>
 
-        {/* ================= METRICS GRID ================= */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-          
-          {/* Card 1: Velocity */}
           <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Study Velocity</h3>
             
             <div className="flex items-baseline gap-1 relative z-10">
               <span className="text-[56px] leading-none font-black tracking-tighter text-[#0F172A]">
-                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.studyVelocityHours !== null ? metrics.studyVelocityHours : '--'}
+                {/* CRITICAL FIX: Safe optional chaining on all metrics references */}
+                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.studyVelocityHours !== null ? metrics?.studyVelocityHours : '--'}
               </span>
               {!isLoading && <span className="text-xl font-black text-[#94A3B8]">hrs</span>}
             </div>
@@ -138,7 +127,7 @@ export default function StudentDashboard() {
             <div className="mt-4 relative z-10">
               {!isLoading && metrics?.velocityVsLastWeek !== null ? (
                 <span className="bg-[#ECFDF5] text-[#059669] text-[11px] font-black px-3 py-1.5 rounded uppercase tracking-wider">
-                  +{metrics.velocityVsLastWeek}% vs last week
+                  +{metrics?.velocityVsLastWeek}% vs last week
                 </span>
               ) : !isLoading ? (
                 <span className="bg-slate-50 text-slate-400 text-[11px] font-black px-3 py-1.5 rounded uppercase tracking-wider">
@@ -147,7 +136,6 @@ export default function StudentDashboard() {
               ) : null}
             </div>
 
-            {/* Stopwatch Watermark */}
             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-100 group-hover:text-slate-200 transition-colors pointer-events-none">
               <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.02 9 9 9a8.994 8.994 0 007.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
@@ -155,13 +143,12 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Card 2: Accuracy */}
           <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Assessment Accuracy</h3>
             
             <div className="flex items-baseline gap-1 relative z-10">
               <span className="text-[56px] leading-none font-black tracking-tighter text-[#0F172A]">
-                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.assessmentAccuracy !== null ? metrics.assessmentAccuracy : '--'}
+                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.assessmentAccuracy !== null ? metrics?.assessmentAccuracy : '--'}
               </span>
               {!isLoading && <span className="text-xl font-black text-[#94A3B8]">%</span>}
             </div>
@@ -169,7 +156,7 @@ export default function StudentDashboard() {
             <div className="mt-4 relative z-10">
               {!isLoading && metrics?.accuracyPercentile !== null ? (
                 <span className="bg-[#EFF6FF] text-[#2563EB] text-[11px] font-black px-3 py-1.5 rounded uppercase tracking-wider">
-                  {metrics.accuracyPercentile}
+                  {metrics?.accuracyPercentile}
                 </span>
               ) : !isLoading ? (
                 <span className="bg-slate-50 text-slate-400 text-[11px] font-black px-3 py-1.5 rounded uppercase tracking-wider">
@@ -178,7 +165,6 @@ export default function StudentDashboard() {
               ) : null}
             </div>
 
-            {/* Target Watermark */}
             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-rose-50 group-hover:text-rose-100 transition-colors pointer-events-none">
               <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
@@ -186,7 +172,6 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Card 3: GuruAI */}
           <div className="bg-[#0F172A] rounded-[2rem] p-8 shadow-[0_8px_30px_rgb(15,23,42,0.2)] hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] text-white flex flex-col justify-center">
             <h3 className="text-[11px] font-black uppercase tracking-widest text-[#38BDF8] mb-2 flex items-center gap-2">
               GURUAI SUGGESTION
@@ -211,7 +196,6 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* ================= SESSIONS SECTION ================= */}
         <div className="animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-both ease-out">
           <h2 className="text-[22px] font-black tracking-tight text-[#0F172A] mb-6">Upcoming Live Concierge Sessions</h2>
           
