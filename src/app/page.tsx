@@ -44,7 +44,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= MEDIA & VISION SECTION ================= */}
-      <section className="py-24 bg-white px-4 sm:px-6 border-t border-slate-100">
+      <section className="py-24 bg-white px-4 sm:px-6 border-t border-slate-100 relative z-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">The GuruCool Inauguration</h2>
@@ -53,26 +53,26 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Primary Launch Video */}
-            <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative group">
+            <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative z-30">
               <iframe 
                 className="w-full h-full absolute inset-0"
                 src="https://www.youtube.com/embed/eMYCbmjyMqc?si=uRz1vN-fI0Z8gA8n" 
                 title="GuruCool Inauguration by GnOvaTech" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                 allowFullScreen
               ></iframe>
             </div>
             
             {/* Platform Walkthrough / Secondary Video */}
-            <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video flex flex-col items-center justify-center text-center p-8 bg-gradient-to-br from-slate-800 to-slate-950 relative">
-               <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 border border-blue-500/50">
-                  <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[14px] border-l-blue-400 border-b-8 border-b-transparent ml-1"></div>
-               </div>
-               <h3 className="text-white font-black text-xl mb-2">Platform Tour</h3>
-               <p className="text-slate-400 text-sm">Watch how our AI Doubt Engine and Native Broadcasts operate seamlessly.</p>
-               <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <span className="bg-blue-600 text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-full">Coming Soon</span>
-               </div>
+            {/* Note: Currently using the inauguration video starting at the 2-minute mark as a placeholder for the tour */}
+            <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative z-30">
+              <iframe 
+                className="w-full h-full absolute inset-0"
+                src="https://www.youtube.com/embed/eMYCbmjyMqc?start=120" 
+                title="GuruCool Platform Tour" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowFullScreen
+              ></iframe>
             </div>
           </div>
         </div>
