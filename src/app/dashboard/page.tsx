@@ -1,40 +1,249 @@
-export default function DashboardHome() {
+"use client";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+
+interface AIMetrics {
+  studyVelocityHours: number | null;
+  velocityVsLastWeek: number | null;
+  assessmentAccuracy: number | null;
+  accuracyPercentile: string | null;
+  aiSuggestionTitle: string | null;
+  aiSuggestionText: string | null;
+}
+
+interface LiveSession {
+  id: string;
+  title: string;
+  faculty: string;
+  scheduledTime: string;
+  meetUrl: string;
+}
+
+export default function StudentDashboard() {
+  const [metrics, setMetrics] = useState<AIMetrics | null>(null);
+  const [sessions, setSessions] = useState<LiveSession[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const [metricsRes, sessionsRes] = await Promise.all([
+          fetch("/api/student/metrics").catch(() => null),
+          fetch("/api/student/sessions").catch(() => null)
+        ]);
+
+        if (metricsRes?.ok) {
+          setMetrics(await metricsRes.json());
+        } else {
+          // STRICT PRODUCTION LOGIC: No fake hardcoded data (14.2 / 92% is gone)
+          setMetrics({
+            studyVelocityHours: null, velocityVsLastWeek: null,
+            assessmentAccuracy: null, accuracyPercentile: null,
+            aiSuggestionTitle: null, aiSuggestionText: null
+          });
+        }
+
+        if (sessionsRes?.ok) {
+          setSessions(await sessionsRes.json());
+        } else {
+          setSessions([]);
+        }
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const today = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
+
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-12">
-      <header className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">AI Insights & Mastery</h1>
-        <p className="mt-2 text-slate-500 font-medium text-lg">Your learning trajectory, quantified.</p>
+    <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-900 pb-20 selection:bg-blue-200">
+      
+      {/* ================= HEADER ================= */}
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-200/60 shadow-sm backdrop-blur-xl bg-white/90">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
+          
+          <div className="flex items-center gap-6">
+            <button className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-slate-50 transition-colors active:scale-95 shadow-sm">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            
+            <div className="flex items-center gap-3 cursor-pointer">
+              <div className="flex -space-x-2">
+                <div className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-amber-200 to-amber-400 shadow-sm"></div>
+                <div className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-indigo-600 shadow-sm"></div>
+              </div>
+              <div className="flex flex-col justify-center ml-1">
+                <h1 className="text-[20px] font-black text-[#0A66C2] leading-none tracking-tight">GuruCOOL.</h1>
+                <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mt-0.5">BY GNOVATECH</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-10 text-[14px] font-bold text-slate-600">
+            <span className="text-slate-500 font-medium mr-2">{today}</span>
+            <Link href="/dashboard/player" className="hover:text-[#0A66C2] transition-colors flex items-center gap-2">
+              <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> My Learning Player
+            </Link>
+            <Link href="/dashboard/catalog" className="hover:text-[#0A66C2] transition-colors flex items-center gap-2">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z"></path></svg> Course Catalog
+            </Link>
+            <Link href="/dashboard/hubs" className="bg-[#EFF6FF] text-[#2563EB] px-4 py-2 rounded-xl transition-colors flex items-center gap-2 border border-blue-100">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg> Course Hubs
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-3 border border-slate-200 rounded-full p-1 pr-5 hover:shadow-md transition-shadow cursor-pointer bg-white active:scale-95">
+            <div className="w-10 h-10 bg-[#0A66C2] rounded-full flex items-center justify-center text-white font-black text-sm shadow-inner">
+              RU
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-black text-slate-900 leading-tight">Rupayan</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student</span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-6 opacity-10 text-6xl">⏱️</div>
-           <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Study Velocity</div>
-           <div className="text-4xl font-black text-slate-900">14.2<span className="text-lg text-slate-400 ml-1">hrs</span></div>
-           <div className="mt-4 text-xs font-bold text-emerald-600 bg-emerald-50 inline-block px-2 py-1 rounded-md">+12% vs last week</div>
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-16">
+        
+        {/* ================= TITLE ================= */}
+        <div className="mb-12 animate-in slide-in-from-bottom-4 fade-in duration-700 ease-out">
+          <h2 className="text-[38px] font-black tracking-tight text-[#0F172A] mb-2">AI Insights & Mastery</h2>
+          <p className="text-lg text-slate-500 font-medium">Your learning trajectory, quantified.</p>
         </div>
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-6 opacity-10 text-6xl">🎯</div>
-           <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Assessment Accuracy</div>
-           <div className="text-4xl font-black text-slate-900">92<span className="text-lg text-slate-400 ml-1">%</span></div>
-           <div className="mt-4 text-xs font-bold text-blue-600 bg-blue-50 inline-block px-2 py-1 rounded-md">Top 5% of Scholars</div>
-        </div>
-        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl relative overflow-hidden text-white">
-           <div className="absolute -right-4 -top-4 w-32 h-32 bg-blue-500 blur-3xl opacity-30 rounded-full"></div>
-           <div className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">GuruAI Suggestion</div>
-           <h3 className="text-xl font-bold mt-2 leading-tight">Focus on "Optics & Light"</h3>
-           <p className="text-slate-400 text-sm mt-2 font-medium">Your recent quiz scores show a 15% drop in reflection formulas. Watch Lesson 3.4.</p>
-        </div>
-      </div>
 
-      <h2 className="text-xl font-black text-slate-900 mb-6">Upcoming Live Concierge Sessions</h2>
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-12 text-center">
-        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        {/* ================= METRICS GRID ================= */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          
+          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
+            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Study Velocity</h3>
+            
+            <div className="flex items-baseline gap-1 relative z-10">
+              <span className="text-[52px] leading-none font-black tracking-tighter text-[#0F172A]">
+                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.studyVelocityHours ?? '--'}
+              </span>
+              {!isLoading && <span className="text-[22px] font-black text-[#94A3B8]">hrs</span>}
+            </div>
+            
+            <div className="mt-6 relative z-10">
+              {!isLoading && metrics?.velocityVsLastWeek !== null ? (
+                <span className="bg-[#ECFDF5] text-[#10B981] text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
+                  +{metrics?.velocityVsLastWeek}% vs last week
+                </span>
+              ) : !isLoading ? (
+                <span className="bg-slate-50 text-slate-400 text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
+                  Awaiting Data
+                </span>
+              ) : null}
+            </div>
+
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-50 group-hover:text-slate-100 transition-colors pointer-events-none">
+              <svg className="w-28 h-28" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.02 9 9 9a8.994 8.994 0 007.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
+            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Assessment Accuracy</h3>
+            
+            <div className="flex items-baseline gap-1 relative z-10">
+              <span className="text-[52px] leading-none font-black tracking-tighter text-[#0F172A]">
+                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.assessmentAccuracy ?? '--'}
+              </span>
+              {!isLoading && <span className="text-[22px] font-black text-[#94A3B8]">%</span>}
+            </div>
+            
+            <div className="mt-6 relative z-10">
+              {!isLoading && metrics?.accuracyPercentile !== null ? (
+                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
+                  {metrics?.accuracyPercentile}
+                </span>
+              ) : !isLoading ? (
+                <span className="bg-slate-50 text-slate-400 text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
+                  Take a quiz
+                </span>
+              ) : null}
+            </div>
+
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-rose-50 group-hover:text-rose-100 transition-colors pointer-events-none">
+              <svg className="w-28 h-28" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div className="bg-[#0B132B] rounded-3xl p-8 shadow-xl hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] text-white flex flex-col justify-center">
+            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#38BDF8] mb-3">
+              GURUAI SUGGESTION
+            </h3>
+            
+            {isLoading ? (
+              <div className="space-y-3 mt-2">
+                <div className="h-7 w-3/4 bg-slate-800 rounded-md animate-pulse"></div>
+                <div className="h-4 w-full bg-slate-800 rounded-md animate-pulse mt-3"></div>
+                <div className="h-4 w-5/6 bg-slate-800 rounded-md animate-pulse"></div>
+              </div>
+            ) : (
+              <>
+                <h4 className="text-[22px] font-bold mb-2 text-white leading-tight">
+                  {metrics?.aiSuggestionTitle || 'Analyzing Study Patterns...'}
+                </h4>
+                <p className="text-[15px] text-[#94A3B8] leading-relaxed font-medium">
+                  {metrics?.aiSuggestionText || 'GuruAI requires more quiz data and watch time to generate a customized learning path for you.'}
+                </p>
+              </>
+            )}
+          </div>
         </div>
-        <h3 className="font-bold text-slate-900 text-lg">No Live Mentorships Scheduled</h3>
-        <p className="text-slate-500 mt-2 font-medium">Submit a doubt in the Expert Helpdesk to trigger a 1-on-1 video breakdown.</p>
-      </div>
+
+        {/* ================= SESSIONS SECTION ================= */}
+        <div className="animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-both ease-out">
+          <h2 className="text-[24px] font-black tracking-tight text-[#0F172A] mb-6">Upcoming Live Concierge Sessions</h2>
+          
+          <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[320px] text-center">
+            {isLoading ? (
+               <div className="flex flex-col items-center gap-4">
+                 <div className="w-16 h-16 bg-slate-50 rounded-2xl animate-pulse"></div>
+                 <div className="h-6 w-48 bg-slate-100 rounded-md animate-pulse"></div>
+                 <div className="h-4 w-64 bg-slate-100 rounded-md animate-pulse"></div>
+               </div>
+            ) : sessions && sessions.length > 0 ? (
+              <div className="w-full flex flex-col gap-4">
+                {sessions.map(session => (
+                   <div key={session.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                     <div className="text-left">
+                       <h4 className="text-lg font-black text-slate-900">{session.title}</h4>
+                       <p className="text-sm font-bold text-slate-500">{session.faculty} • {session.scheduledTime}</p>
+                     </div>
+                     <button onClick={() => window.open(session.meetUrl, '_blank')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
+                       Join Mentorship
+                     </button>
+                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-[72px] h-[72px] bg-[#EFF6FF] rounded-2xl flex items-center justify-center text-[#2563EB] mx-auto mb-6">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 className="text-[20px] font-black text-[#0F172A] mb-2">No Live Mentorships Scheduled</h3>
+                <p className="text-[#64748B] text-[15px] font-medium max-w-md mx-auto">
+                  Submit a doubt in the Expert Helpdesk to trigger a 1-on-1 video breakdown.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </main>
     </div>
   );
 }
