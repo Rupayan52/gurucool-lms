@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link"; // CRITICAL FIX: Next.js routing component
 
 export default function LandingPage() {
-  // Modal State for Video Player Focus
   const [activeModalVideo, setActiveModalVideo] = useState<string | null>(null);
 
   const openVideo = (videoId: string, start?: number) => {
@@ -40,13 +40,18 @@ export default function LandingPage() {
             Learn. Explore. Grow. Lead.
           </p>
 
+          {/* THE FIX: Functional Next.js Links wrapped around the buttons */}
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.25)] flex-1 sm:flex-none">
-              Register yourself
-            </button>
-            <button className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-sm flex-1 sm:flex-none">
-              Login as Student/Faculty
-            </button>
+            <Link href="/register" className="flex-1 sm:flex-none w-full">
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.25)]">
+                Register yourself
+              </button>
+            </Link>
+            <Link href="/login" className="flex-1 sm:flex-none w-full">
+              <button className="w-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all shadow-sm">
+                Login as Student/Faculty
+              </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -60,18 +65,15 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Playable Video Card 1 */}
             <div 
               onClick={() => openVideo("eMYCbmjyMqc")} 
               className="group cursor-pointer bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative hover:shadow-[0_20px_50px_rgba(37,99,235,0.15)] transition-all transform hover:-translate-y-1 duration-300"
             >
-              {/* Background Thumbnail Image directly from YouTube - Immune to Frame Blockers */}
               <img 
                 src="https://img.youtube.com/vi/eMYCbmjyMqc/maxresdefault.jpg" 
                 alt="GuruCool Inauguration by GnOvaTech"
                 className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity duration-300 absolute inset-0"
               />
-              {/* Foreground Glassmorphic Play Overlays */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-6">
                 <span className="bg-blue-600 text-white text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full self-start shadow-md">
                   Launch Event
@@ -90,7 +92,6 @@ export default function LandingPage() {
               </div>
             </div>
             
-            {/* Playable Video Card 2 */}
             <div 
               onClick={() => openVideo("eMYCbmjyMqc", 120)} 
               className="group cursor-pointer bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative hover:shadow-[0_20px_50px_rgba(99,102,241,0.15)] transition-all transform hover:-translate-y-1 duration-300"
@@ -179,7 +180,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Founder Card 1 */}
             <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="w-32 h-32 bg-slate-200 rounded-full mb-6 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden">
                 <svg className="w-16 h-16 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -191,7 +191,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Founder Card 2 */}
             <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="w-32 h-32 bg-slate-200 rounded-full mb-6 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden">
                 <svg className="w-16 h-16 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -207,7 +206,6 @@ export default function LandingPage() {
       </section>
 
       {/* ================= LIGHTBOX / MODAL OVERLAY ================= */}
-      {/* 100% Unblockable native lightbox layout bypassing standard iframe page load rules */}
       {activeModalVideo && (
         <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-10 transition-all">
           <div className="w-full max-w-5xl flex justify-between items-center mb-4 z-50">
