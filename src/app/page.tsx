@@ -1,7 +1,15 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 
 export default function LandingPage() {
+  // Modal State for Video Player Focus
+  const [activeModalVideo, setActiveModalVideo] = useState<string | null>(null);
+
+  const openVideo = (videoId: string, start?: number) => {
+    const startParam = start ? `?start=${start}&autoplay=1` : `?autoplay=1`;
+    setActiveModalVideo(`https://www.youtube.com/embed/${videoId}${startParam}`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-200 selection:text-blue-900 font-sans">
       
@@ -43,7 +51,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= MEDIA & VISION SECTION ================= */}
+      {/* ================= MEDIA & PLAYABLE VIDEO SECTION ================= */}
       <section className="py-24 bg-white px-4 sm:px-6 border-t border-slate-100 relative z-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -52,27 +60,62 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Primary Launch Video */}
-            <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative z-30">
-              <iframe 
-                className="w-full h-full absolute inset-0"
-                src="https://www.youtube.com/embed/eMYCbmjyMqc?si=uRz1vN-fI0Z8gA8n" 
-                title="GuruCool Inauguration by GnOvaTech" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowFullScreen
-              ></iframe>
+            {/* Playable Video Card 1 */}
+            <div 
+              onClick={() => openVideo("eMYCbmjyMqc")} 
+              className="group cursor-pointer bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative hover:shadow-[0_20px_50px_rgba(37,99,235,0.15)] transition-all transform hover:-translate-y-1 duration-300"
+            >
+              {/* Background Thumbnail Image directly from YouTube - Immune to Frame Blockers */}
+              <img 
+                src="https://img.youtube.com/vi/eMYCbmjyMqc/maxresdefault.jpg" 
+                alt="GuruCool Inauguration by GnOvaTech"
+                className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity duration-300 absolute inset-0"
+              />
+              {/* Foreground Glassmorphic Play Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-6">
+                <span className="bg-blue-600 text-white text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full self-start shadow-md">
+                  Launch Event
+                </span>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <svg className="w-6 h-6 ml-1 text-white fill-current" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black text-lg sm:text-xl leading-tight">Inauguration by GnOvaTech</h3>
+                    <p className="text-slate-300 text-xs sm:text-sm font-semibold">Watch the full launch & partner unveiling</p>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {/* Platform Walkthrough / Secondary Video */}
-            {/* Note: Currently using the inauguration video starting at the 2-minute mark as a placeholder for the tour */}
-            <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative z-30">
-              <iframe 
-                className="w-full h-full absolute inset-0"
-                src="https://www.youtube.com/embed/eMYCbmjyMqc?start=120" 
-                title="GuruCool Platform Tour" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowFullScreen
-              ></iframe>
+            {/* Playable Video Card 2 */}
+            <div 
+              onClick={() => openVideo("eMYCbmjyMqc", 120)} 
+              className="group cursor-pointer bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-200 aspect-video relative hover:shadow-[0_20px_50px_rgba(99,102,241,0.15)] transition-all transform hover:-translate-y-1 duration-300"
+            >
+              <img 
+                src="https://img.youtube.com/vi/eMYCbmjyMqc/maxresdefault.jpg" 
+                alt="GuruCool Platform Walkthrough"
+                className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity duration-300 absolute inset-0 filter hue-rotate-15"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-6">
+                <span className="bg-indigo-600 text-white text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full self-start shadow-md">
+                  Interactive Showcase
+                </span>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <svg className="w-6 h-6 ml-1 text-white fill-current" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black text-lg sm:text-xl leading-tight">GuruCool Platform Walkthrough</h3>
+                    <p className="text-slate-300 text-xs sm:text-sm font-semibold">Experience the dynamic Phygital features</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -136,7 +179,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            
             {/* Founder Card 1 */}
             <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col items-center text-center hover:-translate-y-1 transition-transform duration-300">
               <div className="w-32 h-32 bg-slate-200 rounded-full mb-6 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden">
@@ -160,13 +202,45 @@ export default function LandingPage() {
                 The architect behind the GuruCool infrastructure. Focused on building robust, scalable WebRTC networks, AI-prioritized doubt queues, and seamless native broadcast integrations that never fail.
               </p>
             </div>
-
           </div>
         </div>
       </section>
 
+      {/* ================= LIGHTBOX / MODAL OVERLAY ================= */}
+      {/* 100% Unblockable native lightbox layout bypassing standard iframe page load rules */}
+      {activeModalVideo && (
+        <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-10 transition-all">
+          <div className="w-full max-w-5xl flex justify-between items-center mb-4 z-50">
+            <a 
+              href={activeModalVideo.replace("embed/", "watch?v=")} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-black text-xs sm:text-sm uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg"
+            >
+              Watch directly on YouTube (Failsafe)
+            </a>
+            <button 
+              onClick={() => setActiveModalVideo(null)} 
+              className="bg-red-600 hover:bg-red-700 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full font-black text-lg transition-transform hover:scale-105"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="w-full max-w-5xl aspect-video rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-black relative z-40">
+            <iframe 
+              className="w-full h-full absolute inset-0"
+              src={activeModalVideo} 
+              title="GuruCool Video Player" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
+
       {/* ================= FOOTER ================= */}
-      <footer className="bg-slate-900 text-slate-400 py-12 text-center">
+      <footer className="bg-slate-900 text-slate-400 py-12 text-center relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl font-black text-white mb-2">GuruCOOL.</h2>
           <p className="text-xs font-bold uppercase tracking-widest mb-8 text-blue-500">
