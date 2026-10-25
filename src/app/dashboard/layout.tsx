@@ -1,173 +1,321 @@
 "use client";
-import LogoutButton from "@/components/LogoutButton";
-import AutoLogout from "@/components/AutoLogout";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
-type UserBasic = {
-  name: string;
-  role: string;
-};
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<UserBasic | null>(null);
-  
-  // Initialize sidebar as CLOSED by default for all screen sizes
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activePill, setActivePill] = useState("Channels");
+  const [openSections, setOpenSections] = useState({
+    quickViews: true,
+    favorites: true,
+    channels: true,
+  });
 
-  useEffect(() => {
-    fetch("/api/auth/profile")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.name) setUser({ name: data.name, role: data.role });
-      })
-      .catch((err) => console.error("Failed to load profile", err));
-  }, []);
-
-  const handleSignOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+  const toggleSection = (key: "quickViews" | "favorites" | "channels") => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const navLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: "🏠" },
-    { name: "My Courses", href: "/dashboard/courses", icon: "📚" },
-    { name: "Assessments & Quizzes", href: "/dashboard/assessments", icon: "📝" },
-    { name: "Doubt Support", href: "/dashboard/support", icon: "💬" },
-    { name: "Profile", href: "/dashboard/profile", icon: "⚙️" },
+  const navItems = [
+    {
+      label: "Activity",
+      href: "/dashboard",
+      badge: null,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      ),
+    },
+    {
+      label: "Hubs",
+      href: "/dashboard/forum",
+      badge: "1",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Player",
+      href: "/dashboard/player",
+      badge: null,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Catalog",
+      href: "/dashboard/catalog",
+      badge: null,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      ),
+    },
   ];
 
-  const getInitials = (name: string) => {
-    return name ? name.substring(0, 2).toUpperCase() : "ST";
-  };
-
   return (
-    <div className="h-screen bg-slate-50 flex overflow-hidden">
-      <AutoLogout timeoutMinutes={15} />
+    <div className="h-screen w-screen overflow-hidden bg-[#141021] text-[#E1DFDD] flex flex-col font-sans select-none">
       
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/20 z-20 md:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Collapsible Sidebar */}
-      <aside 
-        className={`fixed md:relative z-30 h-full bg-white border-r border-slate-200 transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${
-          isSidebarOpen ? "w-64" : "w-0"
-        }`}
-      >
-        <div className="w-64 flex flex-col h-full">
-          <div className="p-6 flex justify-between items-center border-b border-slate-50">
-            <h1 className="text-2xl font-black text-blue-600 tracking-tight">Menu</h1>
-            <button 
-              onClick={() => setIsSidebarOpen(false)}
-              className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"
-            >
-              ✕
+      {/* ================= TOP TEAMS COMMAND BAR ================= */}
+      <header className="h-12 bg-[#141021] border-b border-white/[0.07] px-3 flex items-center justify-between flex-shrink-0 z-50">
+        {/* Left: Sidebar Toggle & History Arrows */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-white/5 transition-colors active:scale-95"
+            title="Toggle Navigation Pane"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1.8" />
+              <line x1="9" y1="4" x2="9" y2="20" strokeWidth="1.8" />
+            </svg>
+          </button>
+          <div className="hidden sm:flex items-center gap-1 text-slate-500">
+            <button onClick={() => window.history.back()} className="p-1 hover:text-slate-300 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <button onClick={() => window.history.forward()} className="p-1 hover:text-slate-300 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
-          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
+        </div>
+
+        {/* Center: Search / Command Bar */}
+        <div className="flex-1 max-w-xl mx-4">
+          <div className="w-full bg-[#242038] hover:bg-[#2C2744] focus-within:bg-[#1F1C2E] focus-within:ring-1 focus-within:ring-[#7B83EB] border border-white/10 rounded-md px-3 py-1.5 flex items-center gap-2.5 transition-all">
+            <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Press Ctrl+G to search courses, channels, or doubts"
+              className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-400 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Right: Organization & User Presence Badge */}
+        <div className="flex items-center gap-3">
+          <span className="hidden md:inline-block text-xs font-semibold text-slate-300 tracking-tight">
+            GuruCool • GnOvaTech
+          </span>
+          <div className="relative cursor-pointer group">
+            <div className="w-7 h-7 rounded-full bg-[#5B5FC7] text-white text-[11px] font-bold flex items-center justify-center shadow-inner group-hover:ring-2 group-hover:ring-[#7B83EB] transition-all">
+              RU
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#141021] rounded-full"></span>
+          </div>
+        </div>
+      </header>
+
+      {/* ================= MAIN TEAMS BODY ================= */}
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* 1. Far-Left App Activity Rail */}
+        <aside className="w-[68px] bg-[#141021] border-r border-white/[0.06] flex flex-col items-center justify-between py-2 flex-shrink-0 z-40">
+          <div className="flex flex-col items-center gap-1 w-full">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
               return (
                 <Link
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => window.innerWidth < 768 && setIsSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                    isActive 
-                      ? "bg-blue-50 text-blue-700 shadow-sm" 
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  key={item.href}
+                  href={item.href}
+                  className={`relative w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all group ${
+                    isActive ? "text-[#7B83EB]" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <span className={isActive ? "opacity-100" : "opacity-70"}>{link.icon}</span>
-                  <span>{link.name}</span>
+                  {isActive && (
+                    <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#7B83EB] rounded-r-full"></span>
+                  )}
+                  <div className="relative">
+                    {item.icon}
+                    {item.badge && (
+                      <span className="absolute -top-1.5 -right-2 bg-[#F7630C] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-medium tracking-tight">{item.label}</span>
                 </Link>
               );
             })}
-          </nav>
-          <div className="p-4 border-t border-slate-200">
-            <button 
-              onClick={handleSignOut}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors text-sm font-bold flex items-center justify-center gap-2"
-            >
-              <span>🚪</span> Sign Out
-            </button>
           </div>
-        </div>
-      </aside>
-      
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-slate-50">
-        
-        {/* Top Navigation Bar with Branding */}
-        <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-3 flex justify-between items-center shrink-0 z-10">
-          <div className="flex items-center gap-4 md:gap-6">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-xl transition-colors shadow-sm"
-              aria-label="Toggle Sidebar"
+
+          <div className="flex flex-col items-center gap-3 pb-2">
+            <Link
+              href="/"
+              className="p-2 text-slate-500 hover:text-slate-300 transition-colors"
+              title="Back to Landing Page"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-            </button>
-            
-            {/* GnOvaTech & GuruCool Branding */}
-            <div className="flex items-center gap-3 md:gap-4 border-l border-slate-200 pl-4 md:pl-6">
-              <div className="flex -space-x-3">
-                <img src="/image_c1607e.jpg" alt="GnOvaTech" className="w-10 h-10 md:w-11 md:h-11 rounded-full border-2 border-white shadow-md object-cover relative z-10" />
-                <img src="/image_c16028.jpg" alt="GuruCool" className="w-10 h-10 md:w-11 md:h-11 rounded-full border-2 border-white shadow-md object-cover relative z-20" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-black text-blue-700 leading-none tracking-tight mb-0.5">GuruCool.</span>
-                <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase leading-none">by GnOvaTech</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-slate-500 font-medium text-sm hidden lg:block">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </div>
-
-            
-          <Link href="/dashboard/learn" className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all font-bold"><svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg><span>My Learning Player</span></Link>
-          <Link href="/dashboard/catalog" className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all font-bold"><svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg><span>Course Catalog</span></Link>
-          <Link href="/dashboard/forum" className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all font-bold">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
-            <span>Course Hubs</span>
-          </Link>
-          <Link 
-              href="/dashboard/profile" 
-              className="flex items-center gap-3 hover:bg-slate-50 p-1.5 pr-4 rounded-full border border-slate-100 transition-all shadow-sm hover:shadow group"
-            >
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold tracking-wider shadow-inner group-hover:bg-blue-700 transition-colors">
-                {user ? getInitials(user.name) : "..."}
-              </div>
-              <div className="hidden sm:block text-left">
-                <div className="text-sm font-bold text-slate-900 leading-none mb-1">
-                  {user ? user.name : "Loading..."}
-                </div>
-                <div className="text-xs text-slate-500 font-medium leading-none">
-                  {user ? user.role : "Student"}
-                </div>
-              </div>
             </Link>
           </div>
-        </header>
+        </aside>
 
-        {/* Scrollable Page Content */}
-        <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+        {/* 2. Secondary Aubergine Channel Sidebar */}
+        {sidebarOpen && (
+          <aside className="w-[280px] bg-[#1B162A] border-r border-white/[0.06] flex flex-col flex-shrink-0 overflow-y-auto transition-all duration-300">
+            {/* Pane Header */}
+            <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white tracking-tight">Student Hub</h2>
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Link href="/dashboard/forum" className="p-1.5 hover:bg-white/5 hover:text-white rounded-md transition-colors" title="New Doubt Thread">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </Link>
+              </div>
+            </div>
+
+            {/* Teams Filter Pills */}
+            <div className="px-4 pb-3 flex flex-wrap gap-1.5 border-b border-white/[0.06]">
+              {["Unread", "Channels", "Doubts", "Meeting chats"].map((pill) => (
+                <button
+                  key={pill}
+                  onClick={() => setActivePill(pill)}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all active:scale-95 ${
+                    activePill === pill
+                      ? "bg-[#322C4B] text-white border-[#7B83EB]/50"
+                      : "bg-transparent text-slate-400 border-white/15 hover:border-white/30 hover:text-slate-200"
+                  }`}
+                >
+                  {pill}
+                </button>
+              ))}
+            </div>
+
+            {/* Collapsible Tree Sections */}
+            <div className="p-2 space-y-3 text-xs flex-1">
+              
+              {/* Quick Views */}
+              <div>
+                <button
+                  onClick={() => toggleSection("quickViews")}
+                  className="w-full px-2 py-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5"
+                >
+                  <span className={`transition-transform duration-200 ${openSections.quickViews ? "rotate-90" : ""}`}>›</span>
+                  Quick views
+                </button>
+                {openSections.quickViews && (
+                  <div className="mt-1 space-y-0.5">
+                    <Link
+                      href="/dashboard"
+                      className={`px-3 py-2 rounded-md flex items-center justify-between transition-colors ${
+                        pathname === "/dashboard"
+                          ? "bg-[#2D2741] text-white font-semibold"
+                          : "text-slate-300 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <svg className="w-3.5 h-3.5 text-[#7B83EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        AI Insights & Mastery
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-[#7B83EB]"></span>
+                    </Link>
+                    <Link
+                      href="/dashboard/player"
+                      className={`px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${
+                        pathname === "/dashboard/player"
+                          ? "bg-[#2D2741] text-white font-semibold"
+                          : "text-slate-300 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
+                      My Learning Player
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Favorites */}
+              <div>
+                <button
+                  onClick={() => toggleSection("favorites")}
+                  className="w-full px-2 py-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5"
+                >
+                  <span className={`transition-transform duration-200 ${openSections.favorites ? "rotate-90" : ""}`}>›</span>
+                  Favorites
+                </button>
+                {openSections.favorites && (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="px-3 py-2 rounded-md flex items-center gap-2.5 text-slate-300 hover:bg-white/[0.04] cursor-pointer">
+                      <div className="relative">
+                        <div className="w-6 h-6 rounded-full bg-[#5B5FC7] text-white text-[10px] font-bold flex items-center justify-center">
+                          RU
+                        </div>
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-[#1B162A]"></span>
+                      </div>
+                      <span className="truncate">Rupayan (You)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Teams and Channels */}
+              <div>
+                <button
+                  onClick={() => toggleSection("channels")}
+                  className="w-full px-2 py-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1.5"
+                >
+                  <span className={`transition-transform duration-200 ${openSections.channels ? "rotate-90" : ""}`}>›</span>
+                  Teams and channels
+                </button>
+                {openSections.channels && (
+                  <div className="mt-1 space-y-1">
+                    <div className="px-2 py-1.5 flex items-center gap-2.5 text-slate-200 font-semibold">
+                      <div className="w-6 h-6 rounded bg-[#0078D4] text-white text-[10px] font-black flex items-center justify-center">
+                        GC
+                      </div>
+                      <span className="truncate">GuruCool Phygital Batch</span>
+                    </div>
+                    <div className="pl-9 space-y-0.5">
+                      <Link
+                        href="/dashboard/forum"
+                        className={`block px-3 py-1.5 rounded-md transition-colors ${
+                          pathname === "/dashboard/forum"
+                            ? "bg-[#2D2741] text-white font-semibold"
+                            : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        General & Course Hubs
+                      </Link>
+                      <Link
+                        href="/dashboard/catalog"
+                        className={`block px-3 py-1.5 rounded-md transition-colors ${
+                          pathname === "/dashboard/catalog"
+                            ? "bg-[#2D2741] text-white font-semibold"
+                            : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        Course Catalog
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </aside>
+        )}
+
+        {/* 3. Main Workspace Viewport */}
+        <main className="flex-1 bg-[#1F1F23] overflow-y-auto select-text">
           {children}
-        </div>
-      </main>
+        </main>
+
+      </div>
     </div>
   );
 }
