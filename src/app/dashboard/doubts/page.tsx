@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 
-// Mock data representing the student's enrolled courses and teachers
-const ENROLLED_COURSES = [
-  { id: "c1", name: "Physics: Thermodynamics", teacher: "Prof. Saptaswa" },
-  { id: "c2", name: "Mathematics: Calculus", teacher: "Prof. Abc" },
-  { id: "c3", name: "Chemistry: Organic", teacher: "Prof. Debdeep" },
-];
+// Production Data Interfaces matching the API response
+interface CourseOption {
+  id: string;
+  name: string;
+  teacherId: string;
+  teacherName: string;
+  teacherEmail: string;
+}
 
 interface DoubtTicket {
   id: string;
@@ -25,17 +27,19 @@ export default function DoubtClearingHub() {
   const [activeDoubts, setActiveDoubts] = useState<DoubtTicket[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Live Database State
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseOption[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState(ENROLLED_COURSES[0].id);
+  const [selectedCourse, setSelectedCourse] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-fetch the active teacher based on selected course
-  const activeCourseData = ENROLLED_COURSES.find(c => c.id === selectedCourse) || ENROLLED_COURSES[0];
-
   useEffect(() => {
+    // 1. Manage Theme
     const savedTheme = localStorage.getItem("gurucool-theme") as "dark" | "light" | null;
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
     const handleThemeChange = (e: Event) => {
@@ -43,10 +47,35 @@ export default function DoubtClearingHub() {
       if (customEvent.detail) setTheme(customEvent.detail);
     };
     window.addEventListener("gurucool-theme-change", handleThemeChange);
+
+    // 2. Fetch Live Course/Teacher Data from Prisma API
+    const fetchCourses = async () => {
+      try {
+        setIsLoadingData(true);
+        const res = await fetch("/api/student/courses");
+        if (res.ok) {
+          const data: CourseOption[] = await res.json();
+          setEnrolledCourses(data);
+          if (data.length > 0) {
+            setSelectedCourse(data[0].id); // Auto-select first fetched course
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load production data:", error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchCourses();
+
     return () => window.removeEventListener("gurucool-theme-change", handleThemeChange);
   }, []);
 
   const isDark = theme === "dark";
+
+  // Derive the active teacher to display based on the selected course
+  const activeCourseData = enrolledCourses.find((c) => c.id === selectedCourse);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -56,18 +85,18 @@ export default function DoubtClearingHub() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    if (!title.trim() || !description.trim() || !activeCourseData) return;
 
     setIsSubmitting(true);
     
-    // Simulate API routing to the Teacher Resolution Center
+    // Simulating the final POST request to Teacher Resolution Center
     setTimeout(() => {
       const newTicket: DoubtTicket = {
         id: `TKT-${Math.floor(Math.random() * 10000)}`,
         title,
         description,
         course: activeCourseData.name,
-        teacher: activeCourseData.teacher, // Automatically routed to this teacher
+        teacher: activeCourseData.teacherName,
         hasAttachment: !!attachedFile,
         status: "Pending AI Review",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -121,26 +150,36 @@ export default function DoubtClearingHub() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               
-              {/* Context Routing: Two-Step Selection & Auto-Fetch */}
+              {/* Context Routing: DB Course Selection & Auto-Fetched Faculty */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Step 1: Select Course */}
+                
+                {/* Step 1: Select Course (Fetched from DB) */}
                 <div>
                   <label className={`block text-xs font-bold mb-2 uppercase tracking-wide ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Select Registered Course
                   </label>
-                  <select
-                    value={selectedCourse}
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    className={`w-full p-3 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors appearance-none ${
-                      isDark ? "bg-[#1B1B1B] border-white/15 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
-                    }`}
-                  >
-                    {ENROLLED_COURSES.map(course => (
-                      <option key={course.id} value={course.id}>
-                        {course.name}
-                      </option>
-                    ))}
-                  </select>
+                  
+                  {isLoadingData ? (
+                    <div className={`w-full h-11 rounded-lg animate-pulse ${isDark ? "bg-white/10" : "bg-slate-200"}`}></div>
+                  ) : enrolledCourses.length === 0 ? (
+                    <div className={`w-full p-3 rounded-lg border text-sm font-semibold ${isDark ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : "bg-rose-50 border-rose-200 text-rose-600"}`}>
+                      No teachers found in database.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCourse}
+                      onChange={(e) => setSelectedCourse(e.target.value)}
+                      className={`w-full p-3 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors appearance-none ${
+                        isDark ? "bg-[#1B1B1B] border-white/15 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                      }`}
+                    >
+                      {enrolledCourses.map(course => (
+                        <option key={course.id} value={course.id}>
+                          {course.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Step 2: Auto-Fetched Assigned Faculty */}
@@ -148,21 +187,30 @@ export default function DoubtClearingHub() {
                   <label className={`block text-xs font-bold mb-2 uppercase tracking-wide ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Auto-Assigned Faculty
                   </label>
-                  <div className={`w-full p-3 rounded-lg border flex items-center gap-3 ${
-                    isDark ? "bg-[#5B5FC7]/10 border-[#7B83EB]/30 text-white" : "bg-indigo-50 border-indigo-200 text-indigo-900"
-                  }`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                      isDark ? "bg-[#5B5FC7] text-white" : "bg-indigo-200 text-indigo-800"
+                  
+                  {isLoadingData ? (
+                    <div className={`w-full h-11 rounded-lg animate-pulse ${isDark ? "bg-white/10" : "bg-slate-200"}`}></div>
+                  ) : !activeCourseData ? (
+                    <div className={`w-full p-3 rounded-lg border text-sm font-semibold opacity-50 ${isDark ? "bg-white/5 border-white/10" : "bg-slate-100 border-slate-200"}`}>
+                      Awaiting Course Selection...
+                    </div>
+                  ) : (
+                    <div className={`w-full p-2.5 rounded-lg border flex items-center gap-3 ${
+                      isDark ? "bg-[#5B5FC7]/10 border-[#7B83EB]/30 text-white" : "bg-indigo-50 border-indigo-200 text-indigo-900"
                     }`}>
-                      {activeCourseData.teacher.charAt(6)} {/* Extracts first letter of name after "Prof. " */}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                        isDark ? "bg-[#5B5FC7] text-white" : "bg-indigo-200 text-indigo-800"
+                      }`}>
+                        {activeCourseData.teacherName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold leading-tight truncate">Prof. {activeCourseData.teacherName}</span>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider truncate ${isDark ? "text-[#7B83EB]" : "text-indigo-600"}`}>
+                          Ticket Routes to: {activeCourseData.teacherEmail}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold leading-tight">{activeCourseData.teacher}</span>
-                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? "text-[#7B83EB]" : "text-indigo-600"}`}>
-                        Ticket will route to this account
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -174,10 +222,11 @@ export default function DoubtClearingHub() {
                 <input
                   type="text"
                   required
+                  disabled={isLoadingData || enrolledCourses.length === 0}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Confused about calculating torque in Lesson 4"
-                  className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors ${
+                  className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors disabled:opacity-50 ${
                     isDark ? "bg-[#1B1B1B] border-white/15 text-white placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
                   }`}
                 />
@@ -191,10 +240,11 @@ export default function DoubtClearingHub() {
                 <textarea
                   required
                   rows={5}
+                  disabled={isLoadingData || enrolledCourses.length === 0}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Explain exactly where you are stuck. Mention timestamps if referring to a VOD."
-                  className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors resize-none ${
+                  className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors resize-none disabled:opacity-50 ${
                     isDark ? "bg-[#1B1B1B] border-white/15 text-white placeholder-slate-500" : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
                   }`}
                 ></textarea>
@@ -208,8 +258,9 @@ export default function DoubtClearingHub() {
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
+                    disabled={isLoadingData || enrolledCourses.length === 0}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-xs font-semibold transition-colors active:scale-95 ${
+                    className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
                       isDark ? "bg-[#1B1B1B] border-white/15 text-slate-300 hover:text-white hover:border-white/30" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -224,7 +275,6 @@ export default function DoubtClearingHub() {
                     accept="image/*,video/*,.pdf"
                   />
                   
-                  {/* File Name Display / Remove Button */}
                   {attachedFile && (
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-medium max-w-xs ${isDark ? "bg-[#1B1B1B] border-[#7B83EB]/40 text-[#9EA2FF]" : "bg-indigo-50 border-indigo-200 text-indigo-700"}`}>
                       <span className="truncate">{attachedFile.name}</span>
@@ -238,9 +288,9 @@ export default function DoubtClearingHub() {
               <div className="pt-4 flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isLoadingData || enrolledCourses.length === 0}
                   className={`bg-[#5B5FC7] hover:bg-[#4E52B5] text-white px-8 py-2.5 rounded-lg font-bold text-sm transition-all shadow flex items-center gap-2 ${
-                    isSubmitting ? "opacity-70 cursor-not-allowed" : "active:scale-95"
+                    isSubmitting || isLoadingData || enrolledCourses.length === 0 ? "opacity-70 cursor-not-allowed" : "active:scale-95"
                   }`}
                 >
                   {isSubmitting ? (
@@ -278,7 +328,7 @@ export default function DoubtClearingHub() {
                       </span>
                       <span className="flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                        {ticket.teacher}
+                        Prof. {ticket.teacher}
                       </span>
                       {ticket.hasAttachment && (
                         <span className="flex items-center gap-1.5 text-[#7B83EB]">
