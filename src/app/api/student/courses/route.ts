@@ -1,31 +1,41 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-// Initialize Prisma directly for the serverless route
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function POST(req: Request) {
   try {
-    // Queries the live database specifically for accounts with the "TEACHER" role.
-    // This perfectly matches the "Abc" and "cde" records visible in your database dashboard.
-    const teachers = await prisma.user.findMany({
-      where: { role: "TEACHER" },
-      select: { id: true, name: true, email: true }
+    const { studentEmail } = await req.json();
+
+    const student = await prisma.user.findUnique({ 
+      where: { email: studentEmail },
+      include: {
+        registrations: {
+          include: {
+            subject: {
+              include: {
+                teacher: { select: { id: true, name: true, email: true } }
+              }
+            }
+          }
+        }
+      }
     });
 
-    // Maps the fetched teachers into standard course options.
-    // (If you eventually create a dedicated "Course" table in Prisma, you can simply change the above query to prisma.course.findMany({ include: { teacher: true } }) here).
-    const enrolledCourses = teachers.map((teacher) => ({
-      id: `course-${teacher.id}`,
-      name: `Assigned Subject Pipeline`,
-      teacherId: teacher.id,
-      teacherName: teacher.name || teacher.email || "Unassigned Faculty",
-      teacherEmail: teacher.email
+    if (!student) return NextResponse.json([], { status: 404 });
+
+    // Extract exactly what the frontend composer needs
+    const activeCourses = student.registrations.map(reg => ({
+      id: reg.subject.id,
+      name: reg.subject.name,
+      teacherId: reg.subject.teacher?.id,
+      teacherName: reg.subject.teacher?.name || reg.subject.teacher?.email || "Unassigned",
+      teacherEmail: reg.subject.teacher?.email
     }));
 
-    return NextResponse.json(enrolledCourses);
+    return NextResponse.json(activeCourses);
   } catch (error) {
-    console.error("Prisma database query failed:", error);
+    console.error("Failed to fetch registered courses:", error);
     return NextResponse.json([], { status: 500 });
   }
 }

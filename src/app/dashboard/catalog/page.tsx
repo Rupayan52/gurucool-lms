@@ -1,62 +1,138 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
-export default function CourseCatalog() {
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Teacher {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+  description: string;
+  teacher: Teacher | null;
+}
+
+export default function CatalogPage() {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // In a real app, this comes from your NextAuth/JWT session. 
+  // For this integration test, we use a mock student email that exists in your DB.
+  const [studentEmail, setStudentEmail] = useState("xyz@gmail.com"); 
+  
+  const [registeringId, setRegisteringId] = useState<string | null>(null);
+  const [confirmedId, setConfirmedId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch from the new safe Catalog API
-    fetch("/api/catalog").then(r => r.json()).then(data => {
-      setSubjects(data.subjects || []);
-      setTeachers(data.teachers || []);
-      setLoading(false);
-    });
+    const savedTheme = localStorage.getItem("gurucool-theme") as "dark" | "light" | null;
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+    
+    const fetchCatalog = async () => {
+      try {
+        const res = await fetch("/api/student/catalog");
+        if (res.ok) setSubjects(await res.json());
+      } catch (e) {
+        console.error("Catalog fetch error:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCatalog();
   }, []);
 
-  const handleEnroll = async (subjectId: string, teacherId: string) => {
-    if (!teacherId) return alert("Please select a Faculty member.");
-    const res = await fetch("/api/student/enroll", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subjectId, teacherId })
-    });
-    if (res.ok) {
-      alert("Free Trial Activated! You are now assigned to this Faculty's cohort.");
-      window.location.href = "/dashboard/forum";
+  const isDark = theme === "dark";
+
+  const handleStartTrial = async (subjectId: string) => {
+    setRegisteringId(subjectId);
+    try {
+      const res = await fetch("/api/student/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentEmail, subjectId })
+      });
+      
+      if (res.ok) {
+        setConfirmedId(subjectId);
+        setTimeout(() => setConfirmedId(null), 3500); // Clear confirmation after 3.5s
+      }
+    } catch (e) {
+      console.error("Registration error:", e);
+    } finally {
+      setRegisteringId(null);
     }
   };
 
-  if (loading) return <div className="p-10 font-bold text-slate-400">Loading Catalog...</div>;
-
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-12">
-      <header className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Course Catalog</h1>
-        <p className="mt-2 text-slate-500 font-medium text-lg">Activate your free trials and select your mentors.</p>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {subjects.map(subject => (
-          <div key={subject.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">{subject.name}</h3>
-            <p className="text-sm text-slate-500 font-medium flex-1 mb-6">Complete curriculum coverage.</p>
-            
-            <form onSubmit={(e) => { e.preventDefault(); const tId = (e.currentTarget.elements.namedItem('teacher') as HTMLSelectElement).value; handleEnroll(subject.id, tId); }}>
-              <select name="teacher" required className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 mb-3 cursor-pointer">
-                <option value="">Select Faculty Mentor...</option>
-                {teachers.map(t => <option key={t.id} value={t.id}>Prof. {t.name}</option>)}
-              </select>
-              <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-md text-sm uppercase tracking-widest">
-                Start Free Trial
-              </button>
-            </form>
+    <div className={`min-h-full p-8 ${isDark ? "bg-[#1F1F23] text-[#E1DFDD]" : "bg-white text-slate-900"}`}>
+      <div className="max-w-6xl mx-auto">
+        <div className={`flex items-center justify-between mb-8 pb-4 border-b ${isDark ? "border-white/10" : "border-slate-200"}`}>
+          <div>
+            <h1 className="text-[28px] font-black tracking-tight mb-1">Course Catalog</h1>
+            <p className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              Activate your free trials and select your mentors.
+            </p>
           </div>
-        ))}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`h-[250px] rounded-2xl animate-pulse ${isDark ? "bg-[#29282E]" : "bg-slate-100"}`}></div>
+            <div className={`h-[250px] rounded-2xl animate-pulse ${isDark ? "bg-[#29282E]" : "bg-slate-100"}`}></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subjects.map(subject => {
+              const isConfirmed = confirmedId === subject.id;
+              const isRegistering = registeringId === subject.id;
+              
+              return (
+                <div key={subject.id} className={`rounded-2xl p-6 border shadow-sm flex flex-col justify-between transition-all ${isDark ? "bg-[#29282E] border-white/10 hover:border-white/20" : "bg-white border-slate-200 hover:shadow-md"}`}>
+                  
+                  {isConfirmed ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-6 animate-in zoom-in-95 duration-300">
+                      <div className="w-12 h-12 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-3">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <h3 className="text-lg font-bold mb-1">Trial Activated!</h3>
+                      <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>You are now registered for {subject.name}.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center ${isDark ? "bg-[#5B5FC7]/20 text-[#7B83EB]" : "bg-indigo-50 text-indigo-600"}`}>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                        </div>
+                        <h3 className="text-xl font-bold mb-1">{subject.name}</h3>
+                        <p className={`text-xs mb-5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{subject.description}</p>
+                        
+                        <label className={`block text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Assigned Mentor</label>
+                        <div className={`w-full p-2.5 rounded-lg border text-sm font-semibold mb-6 ${isDark ? "bg-[#1B1B1B] border-white/10" : "bg-slate-50 border-slate-200"}`}>
+                          Prof. {subject.teacher?.name || subject.teacher?.email || "Pending"}
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => handleStartTrial(subject.id)}
+                        disabled={isRegistering}
+                        className={`w-full py-3 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow ${
+                          isDark 
+                            ? "bg-[#141021] hover:bg-[#1A1629] border border-white/10 text-white" 
+                            : "bg-slate-900 hover:bg-slate-800 text-white"
+                        }`}
+                      >
+                        {isRegistering ? "Activating..." : "START FREE TRIAL"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
