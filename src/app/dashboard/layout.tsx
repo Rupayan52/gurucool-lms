@@ -13,7 +13,7 @@ const SEARCH_INDEX: SearchItem[] = [
   { title: "AI Insights & Mastery", category: "Workspace", href: "/dashboard" },
   { title: "My Learning Player", category: "Video Player", href: "/dashboard/player" },
   { title: "General & Course Hubs", category: "Channel", href: "/dashboard/forum" },
-  { title: "Expert Helpdesk & Doubts", category: "Doubts", href: "/dashboard/forum" },
+  { title: "Doubt Clearing Hub", category: "Doubts", href: "/dashboard/doubts" },
   { title: "Course Catalog", category: "Courses", href: "/dashboard/catalog" },
 ];
 
@@ -27,8 +27,6 @@ export default function DashboardLayout({
 
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  // Interactive Pill Filter State
   const [activePill, setActivePill] = useState<"Unread" | "Channels" | "Doubts" | "Meeting chats">("Channels");
   
   const [openSections, setOpenSections] = useState({
@@ -47,8 +45,6 @@ export default function DashboardLayout({
   const [presenceMenuOpen, setPresenceMenuOpen] = useState(false);
   const [workLocation, setWorkLocation] = useState<string>("Set work location");
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string>("");
-  const [editingStatus, setEditingStatus] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,9 +116,7 @@ export default function DashboardLayout({
       href: "/dashboard",
       badge: null,
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
       ),
     },
     {
@@ -130,9 +124,7 @@ export default function DashboardLayout({
       href: "/dashboard/forum",
       badge: "1",
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
       ),
     },
     {
@@ -140,10 +132,7 @@ export default function DashboardLayout({
       href: "/dashboard/player",
       badge: null,
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       ),
     },
     {
@@ -151,62 +140,32 @@ export default function DashboardLayout({
       href: "/dashboard/catalog",
       badge: null,
       icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
       ),
     },
   ];
 
   return (
-    <div
-      data-theme={theme}
-      className={`h-screen w-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-200 ${
-        isDark ? "bg-[#141021] text-[#E1DFDD]" : "bg-[#F0F2F5] text-slate-900"
-      }`}
-    >
+    <div data-theme={theme} className={`h-screen w-screen overflow-hidden flex flex-col font-sans select-none transition-colors duration-200 ${isDark ? "bg-[#141021] text-[#E1DFDD]" : "bg-[#F0F2F5] text-slate-900"}`}>
+      
       {/* TOP COMMAND BAR */}
-      <header
-        className={`h-12 px-3 flex items-center justify-between flex-shrink-0 z-50 border-b transition-colors ${
-          isDark
-            ? "bg-[#141021] border-white/[0.07]"
-            : "bg-[#464775] text-white border-black/10"
-        }`}
-      >
+      <header className={`h-12 px-3 flex items-center justify-between flex-shrink-0 z-50 border-b transition-colors ${isDark ? "bg-[#141021] border-white/[0.07]" : "bg-[#464775] text-white border-black/10"}`}>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors active:scale-95"
-            title="Toggle Navigation Pane"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1.8" />
-              <line x1="9" y1="4" x2="9" y2="20" strokeWidth="1.8" />
-            </svg>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors active:scale-95" title="Toggle Navigation Pane">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1.8" /><line x1="9" y1="4" x2="9" y2="20" strokeWidth="1.8" /></svg>
           </button>
         </div>
 
         {/* Search Bar */}
         <div ref={searchContainerRef} className="flex-1 max-w-xl mx-4 relative">
-          <div
-            className={`w-full rounded-md px-3 py-1.5 flex items-center gap-2.5 transition-all border ${
-              isDark
-                ? "bg-[#242038] hover:bg-[#2C2744] focus-within:bg-[#1F1C2E] border-white/10 focus-within:ring-1 focus-within:ring-[#7B83EB]"
-                : "bg-white/95 text-slate-900 border-transparent"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className={`w-full rounded-md px-3 py-1.5 flex items-center gap-2.5 transition-all border ${isDark ? "bg-[#242038] hover:bg-[#2C2744] focus-within:bg-[#1F1C2E] border-white/10 focus-within:ring-1 focus-within:ring-[#7B83EB]" : "bg-white/95 text-slate-900 border-transparent"}`}>
+            <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onFocus={() => setSearchOpen(true)}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSearchOpen(true);
-              }}
+              onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
               placeholder="Press Ctrl+G to search courses, channels, or doubts"
               className="w-full bg-transparent text-xs focus:outline-none"
             />
@@ -214,17 +173,11 @@ export default function DashboardLayout({
 
           {searchOpen && (
             <div className={`absolute left-0 right-0 mt-1.5 rounded-lg shadow-2xl border overflow-hidden z-50 ${isDark ? "bg-[#25242B] border-white/10 text-slate-200" : "bg-white border-slate-200 text-slate-800"}`}>
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">
-                Quick Navigation
-              </div>
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Quick Navigation</div>
               {filteredSearch.map((item) => (
                 <button
                   key={item.title}
-                  onClick={() => {
-                    router.push(item.href);
-                    setSearchOpen(false);
-                    setSearchQuery("");
-                  }}
+                  onClick={() => { router.push(item.href); setSearchOpen(false); setSearchQuery(""); }}
                   className={`w-full px-3.5 py-2.5 text-left text-xs flex items-center justify-between ${isDark ? "hover:bg-[#32313B]" : "hover:bg-slate-100"}`}
                 >
                   <span className="font-semibold">{item.title}</span>
@@ -237,18 +190,13 @@ export default function DashboardLayout({
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={toggleTheme}
-            className="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
-          >
+          <button onClick={toggleTheme} className="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95">
             {isDark ? "Light" : "Dark"}
           </button>
 
           <div ref={profileRef} className="relative">
             <button onClick={() => setProfileOpen(!profileOpen)} className="relative flex items-center justify-center focus:outline-none group">
-              <div className="w-7 h-7 rounded-full bg-[#CBE8E8] text-[#1A5252] text-xs font-bold flex items-center justify-center shadow-inner group-hover:ring-2 group-hover:ring-[#7B83EB] transition-all">
-                B
-              </div>
+              <div className="w-7 h-7 rounded-full bg-[#CBE8E8] text-[#1A5252] text-xs font-bold flex items-center justify-center shadow-inner group-hover:ring-2 group-hover:ring-[#7B83EB] transition-all">B</div>
               <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${presenceColor} border-2 border-[#141021] rounded-full`}></span>
             </button>
 
@@ -296,11 +244,7 @@ export default function DashboardLayout({
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`relative w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all ${isActive ? "text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"}`}
-                >
+                <Link key={item.href} href={item.href} className={`relative w-full py-2.5 flex flex-col items-center justify-center gap-1 transition-all ${isActive ? "text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"}`}>
                   {isActive && <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-[#5B5FC7] rounded-r-full"></span>}
                   <div className="relative">
                     {item.icon}
@@ -316,18 +260,10 @@ export default function DashboardLayout({
         {/* Secondary Channel Sidebar */}
         {sidebarOpen && (
           <aside className={`w-[280px] border-r flex flex-col flex-shrink-0 overflow-y-auto ${isDark ? "bg-[#1B162A] border-white/[0.06]" : "bg-[#F5F5F5] border-slate-200"}`}>
-            
-            {/* Header + Interactive Edit Icon */}
             <div className="px-4 pt-4 pb-3 flex items-center justify-between">
               <h2 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>Student Hub</h2>
-              <Link
-                href="/dashboard/forum"
-                className={`p-1.5 rounded-md transition-colors ${isDark ? "hover:bg-white/5 hover:text-white" : "hover:bg-slate-200 hover:text-slate-900"}`}
-                title="New Doubt Thread / Post"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
+              <Link href="/dashboard/doubts" className={`p-1.5 rounded-md transition-colors ${isDark ? "hover:bg-white/5 hover:text-white" : "hover:bg-slate-200 hover:text-slate-900"}`} title="New Doubt Thread / Post">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
               </Link>
             </div>
 
@@ -338,31 +274,18 @@ export default function DashboardLayout({
                   key={pill}
                   onClick={() => {
                     setActivePill(pill);
-                    // Route to forum if the user clicks specific communication pills
-                    if (pill === "Doubts" || pill === "Meeting chats") {
-                      router.push("/dashboard/forum");
-                    }
+                    if (pill === "Doubts" || pill === "Meeting chats") router.push("/dashboard/doubts");
                   }}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all active:scale-95 ${
-                    activePill === pill
-                      ? isDark
-                        ? "bg-[#322C4B] text-white border-[#7B83EB]/50 shadow"
-                        : "bg-[#5B5FC7] text-white border-[#5B5FC7] shadow"
-                      : isDark
-                      ? "bg-transparent text-slate-400 border-white/15 hover:border-white/30 hover:text-slate-200"
-                      : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
-                  }`}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all active:scale-95 ${activePill === pill ? isDark ? "bg-[#322C4B] text-white border-[#7B83EB]/50 shadow" : "bg-[#5B5FC7] text-white border-[#5B5FC7] shadow" : isDark ? "bg-transparent text-slate-400 border-white/15 hover:border-white/30 hover:text-slate-200" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
                 >
                   {pill}
                 </button>
               ))}
             </div>
 
-            {/* Dynamic Tree Views based on Active Pill Filter */}
             <div className="p-2 space-y-3 text-xs flex-1">
               {activePill === "Channels" || activePill === "Unread" ? (
                 <>
-                  {/* Quick Views */}
                   <div>
                     <button onClick={() => toggleSection("quickViews")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
                       <span className={`transition-transform duration-200 ${openSections.quickViews ? "rotate-90" : ""}`}>›</span>
@@ -381,7 +304,6 @@ export default function DashboardLayout({
                     )}
                   </div>
 
-                  {/* Favorites */}
                   <div>
                     <button onClick={() => toggleSection("favorites")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
                       <span className={`transition-transform duration-200 ${openSections.favorites ? "rotate-90" : ""}`}>›</span>
@@ -400,7 +322,6 @@ export default function DashboardLayout({
                     )}
                   </div>
 
-                  {/* Teams and Channels */}
                   <div>
                     <button onClick={() => toggleSection("channels")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
                       <span className={`transition-transform duration-200 ${openSections.channels ? "rotate-90" : ""}`}>›</span>
@@ -413,8 +334,18 @@ export default function DashboardLayout({
                           <span className="truncate">GuruCool Phygital Batch</span>
                         </div>
                         <div className="pl-9 space-y-0.5">
-                          <Link href="/dashboard/forum" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/forum" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>General & Course Hubs</Link>
-                          <Link href="/dashboard/catalog" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/catalog" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>Course Catalog</Link>
+                          <Link href="/dashboard/forum" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/forum" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
+                            General & Course Hubs
+                          </Link>
+                          
+                          {/* THE FIX: DEDICATED DOUBT CLEARING HUB CHANNEL */}
+                          <Link href="/dashboard/doubts" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/doubts" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
+                            Doubt Clearing Hub
+                          </Link>
+
+                          <Link href="/dashboard/catalog" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/catalog" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
+                            Course Catalog
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -425,8 +356,8 @@ export default function DashboardLayout({
                   <p className={`text-xs mb-3 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Showing filter view for: <strong className={isDark ? "text-white" : "text-slate-900"}>{activePill}</strong>
                   </p>
-                  <Link href="/dashboard/forum" className="text-xs text-[#7B83EB] font-bold underline">
-                    Open Course Hubs & Resolution Center →
+                  <Link href="/dashboard/doubts" className="text-xs text-[#7B83EB] font-bold underline">
+                    Open Doubt Clearing Hub →
                   </Link>
                 </div>
               )}
@@ -434,7 +365,6 @@ export default function DashboardLayout({
           </aside>
         )}
 
-        {/* Main Viewport */}
         <main className={`flex-1 overflow-y-auto select-text transition-colors duration-200 ${isDark ? "bg-[#1F1F23]" : "bg-white"}`}>
           {children}
         </main>
