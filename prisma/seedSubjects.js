@@ -4,37 +4,39 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding core subjects...");
 
-  // 1. Fetch your existing teachers (like 'Abc' and 'cde')
-  const teachers = await prisma.user.findMany({
-    where: { role: 'TEACHER' }
-  });
-
+  const teachers = await prisma.user.findMany({ where: { role: 'TEACHER' } });
   if (teachers.length === 0) {
     console.log("No teachers found in database to assign subjects to.");
     return;
   }
 
-  // 2. Define the core subjects
   const coreSubjects = ["Physics", "Chemistry", "Mathematics", "Biology"];
 
-  // 3. Upsert subjects and assign them to available teachers (round-robin style)
   for (let i = 0; i < coreSubjects.length; i++) {
     const subjectName = coreSubjects[i];
     const assignedTeacher = teachers[i % teachers.length]; // Distribute evenly
 
-    await prisma.subject.upsert({
-      where: { name: subjectName },
-      update: { teacherId: assignedTeacher.id },
-      create: {
-        name: subjectName,
-        description: "Complete curriculum coverage.",
-        teacherId: assignedTeacher.id
-      }
-    });
-    console.log(`- Upserted ${subjectName} assigned to ${assignedTeacher.name || assignedTeacher.email}`);
+    // Safely check if subject exists without using upsert
+    const existingSubject = await prisma.subject.findFirst({ where: { name: subjectName } });
+    
+    if (existingSubject) {
+      await prisma.subject.update({
+        where: { id: existingSubject.id },
+        data: { teacherId: assignedTeacher.id, description: "Complete curriculum coverage." }
+      });
+      console.log(`- Updated ${subjectName} -> assigned to ${assignedTeacher.name || assignedTeacher.email}`);
+    } else {
+      await prisma.subject.create({
+        data: {
+          name: subjectName,
+          description: "Complete curriculum coverage.",
+          teacherId: assignedTeacher.id
+        }
+      });
+      console.log(`- Created ${subjectName} -> assigned to ${assignedTeacher.name || assignedTeacher.email}`);
+    }
   }
-
-  console.log("Seed complete.");
+  console.log("✅ Seed complete.");
 }
 
 main()

@@ -1,44 +1,178 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String         @id @default(uuid())
-  email        String         @unique
-  name         String?
-  passwordHash String
-  role         Role           @default(STUDENT)
-  tokenVersion Int            @default(0)
-  createdAt    DateTime       @default(now())
-  
-  // A teacher can mentor many subjects
-  mentoredSubjects Subject[]  @relation("TeacherSubjects")
-  
-  // A student has many registrations
-  registrations    Registration[]
+generator client {
+  provider = "prisma-client-js"
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
+model User {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  email           String           @unique
+  passwordHash    String
+  role            String           @default("STUDENT")
+  tokenVersion    Int              @default(0) // Used for instant session revocation
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  subscription    Subscription?
+  doubtTickets    DoubtTicket[]
+  enrollments     Enrollment[]
+  quizScores      QuizScore[]
+  deletionRequest DeletionRequest?
+  securityLogs    SecurityLog[]
+  teacherId       String?
+  teacher         User?            @relation("StudentFaculty", fields: [teacherId], references: [id])
+  students        User[]           @relation("StudentFaculty")
+  forumPosts      ForumPost[]      @relation("PostAuthor")
+  ownedChannels   ForumPost[]      @relation("ChannelOwner")
+  studentCohorts  SubjectCohort[]  @relation("StudentCohort")
+  teacherCohorts  SubjectCohort[]  @relation("TeacherCohort")
+  registrations    Registration[]
+  mentoredSubjects Subject[] @relation("TeacherSubjects")
+}
+
+model SecurityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     String
+  ipAddress String
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planType  String   @default("FREE")
+  isActive  Boolean  @default(true)
+  startDate DateTime @default(now())
+  endDate   DateTime
+}
+
+model CourseClass {
+  id       String    @id @default(uuid())
+  name     String
+  subjects Subject[]
 }
 
 model Subject {
-  id            String         @id @default(uuid())
-  name          String         @unique // e.g., "Physics", "Chemistry"
-  description   String?
-  
-  // A subject can be taught by one designated faculty member in this Phygital model
-  teacherId     String?
-  teacher       User?          @relation("TeacherSubjects", fields: [teacherId], references: [id])
-  
+  id            String          @id @default(uuid())
+  name          String
+  courseClassId String
+  courseClass   CourseClass     @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
+  chapters      Chapter[]
+  ForumPost     ForumPost[]
+  cohorts       SubjectCohort[] @relation("SubjectCohort")
   registrations Registration[]
+  teacherId     String?
+  teacher       User?      @relation("TeacherSubjects", fields: [teacherId], references: [id])
+}
+
+model Chapter {
+  id        String   @id @default(uuid())
+  name      String
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  quizzes   Quiz[]
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id         String  @id @default(uuid())
+  title      String
+  chapterId  String
+  chapter    Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  orderIndex Int
+  videoUrl   String?
+  pdfUrl     String?
+  isLive Boolean @default(false)
+  liveUrl String?
+  broadcastType String @default("URL") // URL, NATIVE_WEBRTC, or PRE_RECORDED_LIVE
+  scheduledStartTime DateTime?
+}
+
+model Quiz {
+  id        String      @id @default(uuid())
+  title     String
+  chapterId String
+  chapter   Chapter     @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions Json
+  scores    QuizScore[]
+}
+
+model QuizScore {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score     Int
+  createdAt DateTime @default(now())
+}
+
+model Enrollment {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status String @default("ACTIVE")
+}
+
+model DeletionRequest {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pin       String
+  createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  id        String   @id @default(uuid())
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+}
+
+model DoubtTicket {
+  id        String   @id @default(uuid())
+  userId    String
+  subject   String
+  question  String
+  answer    String?  @db.Text
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ForumPost {
+  id             String   @id @default(uuid())
+  content        String   @db.Text
+  userId         String
+  subjectId      String
+  channelOwnerId String
+  isPinned       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user           User     @relation("PostAuthor", fields: [userId], references: [id])
+  subject        Subject  @relation(fields: [subjectId], references: [id])
+  channelOwner   User     @relation("ChannelOwner", fields: [channelOwnerId], references: [id])
+}
+
+model SubjectCohort {
+  id        String   @id @default(uuid())
+  studentId String
+  teacherId String
+  subjectId String
+  createdAt DateTime @default(now())
+
+  student User    @relation("StudentCohort", fields: [studentId], references: [id])
+  teacher User    @relation("TeacherCohort", fields: [teacherId], references: [id])
+  subject Subject @relation("SubjectCohort", fields: [subjectId], references: [id])
+
+  @@unique([studentId, subjectId])
 }
 
 model Registration {
@@ -46,9 +180,7 @@ model Registration {
   studentId  String
   subjectId  String
   createdAt  DateTime @default(now())
-  
   student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, subjectId]) // Prevent duplicate registrations
+  @@unique([studentId, subjectId])
 }
