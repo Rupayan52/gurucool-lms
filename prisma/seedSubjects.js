@@ -10,11 +10,11 @@ async function main() {
     return;
   }
 
-  // Ensure a default CourseClass exists (removed the invalid 'description' field)
+  // Ensure a default CourseClass exists
   let defaultClass = await prisma.courseClass.findFirst({ where: { name: "Standard Phygital Batch" } });
   if (!defaultClass) {
     defaultClass = await prisma.courseClass.create({
-      data: { name: "Standard Phygital Batch" } 
+      data: { name: "Standard Phygital Batch" }
     });
     console.log("- Created default CourseClass.");
   }
@@ -26,14 +26,14 @@ async function main() {
     const assignedTeacher = teachers[i % teachers.length]; // Distribute evenly
 
     const existingSubject = await prisma.subject.findFirst({ where: { name: subjectName } });
-    
+
     if (existingSubject) {
       await prisma.subject.update({
         where: { id: existingSubject.id },
-        data: { 
-          teacherId: assignedTeacher.id, 
-          description: "Complete curriculum coverage.",
-          courseClassId: defaultClass.id 
+        data: {
+          teacherId: assignedTeacher.id,
+          // Removed invalid 'description' field here
+          courseClassId: defaultClass.id
         }
       });
       console.log(`- Updated ${subjectName} -> assigned to ${assignedTeacher.name || assignedTeacher.email}`);
@@ -41,9 +41,9 @@ async function main() {
       await prisma.subject.create({
         data: {
           name: subjectName,
-          description: "Complete curriculum coverage.",
+          // Removed invalid 'description' field here
           teacherId: assignedTeacher.id,
-          courseClassId: defaultClass.id 
+          courseClassId: defaultClass.id
         }
       });
       console.log(`- Created ${subjectName} -> assigned to ${assignedTeacher.name || assignedTeacher.email}`);
