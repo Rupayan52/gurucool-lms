@@ -43,15 +43,11 @@ export default function DashboardLayout({
   const [profileOpen, setProfileOpen] = useState(false);
   const [presence, setPresence] = useState<"Available" | "Busy" | "Do not disturb" | "Away">("Available");
   const [presenceMenuOpen, setPresenceMenuOpen] = useState(false);
-  const [workLocation, setWorkLocation] = useState<string>("Set work location");
-  const [locationMenuOpen, setLocationMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("gurucool-theme") as "dark" | "light" | null;
-    if (savedTheme === "light" || savedTheme === "dark") {
-      setTheme(savedTheme);
-    }
+    if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "g") {
@@ -69,7 +65,6 @@ export default function DashboardLayout({
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
         setPresenceMenuOpen(false);
-        setLocationMenuOpen(false);
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setSearchOpen(false);
@@ -95,6 +90,12 @@ export default function DashboardLayout({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleSignOut = () => {
+    // Closes the menu and explicitly routes back to the root login/landing page
+    setProfileOpen(false);
+    router.push("/");
+  };
+
   const filteredSearch = SEARCH_INDEX.filter(
     (item) =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -115,33 +116,25 @@ export default function DashboardLayout({
       label: "Activity",
       href: "/dashboard",
       badge: null,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-      ),
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
     },
     {
       label: "Hubs",
       href: "/dashboard/forum",
       badge: "1",
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-      ),
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>,
     },
     {
       label: "Player",
       href: "/dashboard/player",
       badge: null,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      ),
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     },
     {
       label: "Catalog",
       href: "/dashboard/catalog",
       badge: null,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-      ),
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
     },
   ];
 
@@ -194,6 +187,7 @@ export default function DashboardLayout({
             {isDark ? "Light" : "Dark"}
           </button>
 
+          {/* ================= 3D PROFILE POPOVER REDESIGN ================= */}
           <div ref={profileRef} className="relative">
             <button onClick={() => setProfileOpen(!profileOpen)} className="relative flex items-center justify-center focus:outline-none group">
               <div className="w-7 h-7 rounded-full bg-[#CBE8E8] text-[#1A5252] text-xs font-bold flex items-center justify-center shadow-inner group-hover:ring-2 group-hover:ring-[#7B83EB] transition-all">B</div>
@@ -201,34 +195,64 @@ export default function DashboardLayout({
             </button>
 
             {profileOpen && (
-              <div className={`absolute right-0 mt-2 w-80 rounded-xl shadow-2xl border overflow-hidden z-50 ${isDark ? "bg-[#242424] border-white/10 text-[#E1DFDD]" : "bg-white border-slate-200 text-slate-900"}`}>
-                <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-                  <span className="text-sm font-bold">GuruCool</span>
-                  <Link href="/login" onClick={() => setProfileOpen(false)} className="text-xs hover:underline">Sign out</Link>
+              <div className={`absolute right-0 mt-3 w-80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] border overflow-hidden z-50 transform origin-top-right transition-all animate-in fade-in zoom-in-95 duration-200 ${
+                isDark ? "bg-[#242428]/95 backdrop-blur-xl border-white/10 text-[#E1DFDD]" : "bg-white/95 backdrop-blur-xl border-slate-200 text-slate-900"
+              }`}>
+                
+                {/* Header: Brand & Active Sign Out */}
+                <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? "border-white/10 bg-[#1B1B1F]/50" : "border-slate-100 bg-slate-50/50"}`}>
+                  <span className="text-sm font-black tracking-wide">GuruCool</span>
+                  <button 
+                    onClick={handleSignOut} 
+                    className={`text-xs font-bold px-4 py-1.5 rounded-lg transition-all active:scale-95 border ${
+                      isDark 
+                        ? "bg-white/5 border-white/5 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 text-slate-300" 
+                        : "bg-white border-slate-200 shadow-sm hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-700"
+                    }`}
+                  >
+                    Sign out
+                  </button>
                 </div>
-                <div className="px-5 pb-4 flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#CBE8E8] text-[#1A5252] text-lg font-bold flex items-center justify-center flex-shrink-0">B</div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold truncate">bandyopadhyayrupayan (Student)</h4>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">bandyopadhyayrupayan@gmail.com</p>
+
+                {/* User Info Block */}
+                <div className="p-5 flex items-start gap-4">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#CBE8E8] to-[#9DC6C6] text-[#1A5252] text-xl font-black flex items-center justify-center shadow-inner flex-shrink-0">
+                      B
+                    </div>
+                    <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${presenceColor} border-2 ${isDark ? "border-[#242428]" : "border-white"} rounded-full shadow-sm`}></span>
+                  </div>
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <h4 className="text-sm font-bold truncate leading-tight">bandyopadhyayrupayan</h4>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${isDark ? "text-[#7B83EB]" : "text-indigo-600"}`}>Student</span>
+                    <p className={`text-xs truncate mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>bandyopadhyayrupayan@gmail.com</p>
                   </div>
                 </div>
-                <div className="px-2 py-1 space-y-0.5 text-xs">
-                  <button onClick={() => setPresenceMenuOpen(!presenceMenuOpen)} className="w-full px-3 py-2.5 rounded-lg flex items-center justify-between hover:bg-white/5">
-                    <span className="flex items-center gap-3">
-                      <span className={`w-3 h-3 rounded-full ${presenceColor}`}></span>
-                      <span>{presence}</span>
-                    </span>
-                  </button>
-                  {presenceMenuOpen && (
-                    <div className="mx-3 my-1 p-1 rounded-lg bg-black/40">
-                      {(["Available", "Busy", "Do not disturb", "Away"] as const).map((status) => (
-                        <button key={status} onClick={() => { setPresence(status); setPresenceMenuOpen(false); }} className="w-full px-3 py-1.5 text-left text-xs hover:bg-white/10 rounded">
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+
+                {/* Interactive Presence Toggle */}
+                <div className="px-4 pb-4">
+                  <div className={`rounded-xl border p-1 transition-colors ${isDark ? "bg-[#1B1B1F]/50 border-white/5" : "bg-slate-50 border-slate-100"}`}>
+                    <button onClick={() => setPresenceMenuOpen(!presenceMenuOpen)} className={`w-full px-3 py-2.5 rounded-lg flex items-center justify-between transition-colors ${isDark ? "hover:bg-white/5" : "hover:bg-slate-200/50"}`}>
+                      <span className="flex items-center gap-3">
+                        <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${presenceColor}`}></span>
+                        <span className="text-sm font-semibold">{presence}</span>
+                      </span>
+                      <svg className={`w-4 h-4 transition-transform duration-200 ${presenceMenuOpen ? "rotate-180" : ""} ${isDark ? "text-slate-500" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    
+                    {presenceMenuOpen && (
+                      <div className={`mt-1 rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${isDark ? "bg-black/20" : "bg-white border border-slate-100 shadow-sm"}`}>
+                        {(["Available", "Busy", "Do not disturb", "Away"] as const).map((status) => (
+                          <button key={status} onClick={() => { setPresence(status); setPresenceMenuOpen(false); }} className={`w-full px-4 py-2.5 text-left text-xs font-semibold flex items-center gap-3 transition-colors ${isDark ? "hover:bg-white/10" : "hover:bg-slate-50"}`}>
+                            <span className={`w-2 h-2 rounded-full ${
+                              { Available: "bg-emerald-500", Busy: "bg-rose-500", "Do not disturb": "bg-rose-600", Away: "bg-amber-400" }[status]
+                            }`}></span>
+                            {status}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -288,8 +312,7 @@ export default function DashboardLayout({
                 <>
                   <div>
                     <button onClick={() => toggleSection("quickViews")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
-                      <span className={`transition-transform duration-200 ${openSections.quickViews ? "rotate-90" : ""}`}>›</span>
-                      Quick views
+                      <span className={`transition-transform duration-200 ${openSections.quickViews ? "rotate-90" : ""}`}>›</span> Quick views
                     </button>
                     {openSections.quickViews && (
                       <div className="mt-1 space-y-0.5">
@@ -303,11 +326,9 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
                   <div>
                     <button onClick={() => toggleSection("favorites")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
-                      <span className={`transition-transform duration-200 ${openSections.favorites ? "rotate-90" : ""}`}>›</span>
-                      Favorites
+                      <span className={`transition-transform duration-200 ${openSections.favorites ? "rotate-90" : ""}`}>›</span> Favorites
                     </button>
                     {openSections.favorites && (
                       <div className="mt-1 space-y-0.5">
@@ -321,11 +342,9 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
                   <div>
                     <button onClick={() => toggleSection("channels")} className={`w-full px-2 py-1 text-[11px] font-semibold flex items-center gap-1.5 ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-900"}`}>
-                      <span className={`transition-transform duration-200 ${openSections.channels ? "rotate-90" : ""}`}>›</span>
-                      Teams and channels
+                      <span className={`transition-transform duration-200 ${openSections.channels ? "rotate-90" : ""}`}>›</span> Teams and channels
                     </button>
                     {openSections.channels && (
                       <div className="mt-1 space-y-1">
@@ -334,18 +353,9 @@ export default function DashboardLayout({
                           <span className="truncate">GuruCool Phygital Batch</span>
                         </div>
                         <div className="pl-9 space-y-0.5">
-                          <Link href="/dashboard/forum" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/forum" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
-                            General & Course Hubs
-                          </Link>
-                          
-                          {/* THE FIX: DEDICATED DOUBT CLEARING HUB CHANNEL */}
-                          <Link href="/dashboard/doubts" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/doubts" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
-                            Doubt Clearing Hub
-                          </Link>
-
-                          <Link href="/dashboard/catalog" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/catalog" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>
-                            Course Catalog
-                          </Link>
+                          <Link href="/dashboard/forum" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/forum" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>General & Course Hubs</Link>
+                          <Link href="/dashboard/doubts" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/doubts" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>Doubt Clearing Hub</Link>
+                          <Link href="/dashboard/catalog" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/catalog" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>Course Catalog</Link>
                         </div>
                       </div>
                     )}
