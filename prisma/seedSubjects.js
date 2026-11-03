@@ -10,11 +10,11 @@ async function main() {
     return;
   }
 
-  // Ensure a default CourseClass exists to satisfy the schema requirement
+  // Ensure a default CourseClass exists (removed the invalid 'description' field)
   let defaultClass = await prisma.courseClass.findFirst({ where: { name: "Standard Phygital Batch" } });
   if (!defaultClass) {
     defaultClass = await prisma.courseClass.create({
-      data: { name: "Standard Phygital Batch", description: "Default cohort for core subjects." }
+      data: { name: "Standard Phygital Batch" } 
     });
     console.log("- Created default CourseClass.");
   }
@@ -43,7 +43,6 @@ async function main() {
           name: subjectName,
           description: "Complete curriculum coverage.",
           teacherId: assignedTeacher.id,
-          // Satisfy the missing CourseClass relation error
           courseClassId: defaultClass.id 
         }
       });
