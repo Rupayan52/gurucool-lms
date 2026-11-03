@@ -184,3 +184,11 @@ model Registration {
   subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   @@unique([studentId, subjectId])
 }
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

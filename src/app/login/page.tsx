@@ -1,99 +1,60 @@
 "use client";
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-function LoginGateway() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isAdminLogin = searchParams.get("admin") === "true";
-  
-  const [email, setEmail] = useState("");
+export default function LoginPage() {
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
+    setError("");
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ identifier, password }),
     });
-    
-    const data = await res.json();
-    
     if (res.ok) {
-      if (data.role === "TEACHER") {
-        router.push("/teacher");
-      } else if (data.role === "ADMIN") {
-        router.push("/admin/content");
-      } else {
-        router.push("/dashboard");
-      }
+      router.push("/dashboard");
+      router.refresh();
     } else {
-      setError(data.error || "Authentication failed. Check credentials.");
+      setError("Invalid credentials");
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-900 p-4 relative overflow-hidden">
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-
-      <div className="w-full max-w-md bg-white/5 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 p-8 relative z-10">
-        <div className="text-center mb-10">
-          <div className="text-4xl font-black tracking-tighter mb-2 text-white">
-            <span className="text-blue-500">Guru</span>Cool.
-          </div>
-          <p className="text-slate-400 font-medium text-sm uppercase tracking-widest">
-            {isAdminLogin ? "System Administrator Access" : "Unified Access Gateway"}
-          </p>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Welcome Back</h1>
+          <p className="text-slate-500 text-sm">Sign in to access your GuruCool dashboard</p>
         </div>
-
-        {error && (
-          <div className="bg-red-500/10 text-red-400 p-4 rounded-xl text-sm font-bold mb-6 border border-red-500/20 text-center flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {error && <div className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-lg text-sm text-center mb-6">{error}</div>}
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl p-3.5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium transition-all" placeholder="name@domain.com" />
+            <input type="text" placeholder="Email or Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required className="w-full border border-slate-300 rounded-lg p-3 text-slate-900 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all" />
           </div>
           <div>
-            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Secure Password</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl p-3.5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium transition-all" placeholder="••••••••" />
+            <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-slate-300 rounded-lg p-3 text-slate-900 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all" />
+            <div className="text-right mt-1">
+              <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">Forgot password?</Link>
+            </div>
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:bg-blue-500 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-            {loading ? (
-              <span className="animate-pulse">Authenticating...</span>
-            ) : (
-              <>Authenticate Identity <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></>
-            )}
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-70">
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
-
-        {!isAdminLogin && (
-          <div className="mt-8 pt-6 border-t border-white/10 text-center text-sm font-medium text-slate-400">
-            Unregistered? <Link href="/register" className="text-blue-400 font-bold hover:text-blue-300 transition-colors">Apply for an account</Link>
-          </div>
-        )}
+        <div className="mt-8 text-center text-sm">
+          <span className="text-slate-500">Don't have an account? </span>
+          <Link href="/register" className="text-blue-600 font-semibold hover:underline">Sign up</Link>
+        </div>
       </div>
     </div>
-  );
-}
-
-export default function Login() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-900"><div className="text-blue-500 font-bold animate-pulse tracking-widest uppercase">Initializing Gateway...</div></div>}>
-      <LoginGateway />
-    </Suspense>
   );
 }
