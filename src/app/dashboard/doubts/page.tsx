@@ -32,6 +32,9 @@ export default function DoubtClearingHub() {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-fetch the active teacher based on selected course
+  const activeCourseData = ENROLLED_COURSES.find(c => c.id === selectedCourse) || ENROLLED_COURSES[0];
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("gurucool-theme") as "dark" | "light" | null;
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
@@ -59,13 +62,12 @@ export default function DoubtClearingHub() {
     
     // Simulate API routing to the Teacher Resolution Center
     setTimeout(() => {
-      const courseObj = ENROLLED_COURSES.find(c => c.id === selectedCourse);
       const newTicket: DoubtTicket = {
         id: `TKT-${Math.floor(Math.random() * 10000)}`,
         title,
         description,
-        course: courseObj?.name || "General",
-        teacher: courseObj?.teacher || "Faculty",
+        course: activeCourseData.name,
+        teacher: activeCourseData.teacher, // Automatically routed to this teacher
         hasAttachment: !!attachedFile,
         status: "Pending AI Review",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -117,25 +119,51 @@ export default function DoubtClearingHub() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {/* Context Routing: Course/Teacher Selection */}
-              <div>
-                <label className={`block text-xs font-bold mb-2 uppercase tracking-wide ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  Route to Faculty
-                </label>
-                <select
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
-                  className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors appearance-none ${
-                    isDark ? "bg-[#1B1B1B] border-white/15 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
-                  }`}
-                >
-                  {ENROLLED_COURSES.map(course => (
-                    <option key={course.id} value={course.id}>
-                      {course.name} (Instructed by {course.teacher})
-                    </option>
-                  ))}
-                </select>
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              
+              {/* Context Routing: Two-Step Selection & Auto-Fetch */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Step 1: Select Course */}
+                <div>
+                  <label className={`block text-xs font-bold mb-2 uppercase tracking-wide ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Select Registered Course
+                  </label>
+                  <select
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    className={`w-full p-3 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#7B83EB] transition-colors appearance-none ${
+                      isDark ? "bg-[#1B1B1B] border-white/15 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    {ENROLLED_COURSES.map(course => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Step 2: Auto-Fetched Assigned Faculty */}
+                <div>
+                  <label className={`block text-xs font-bold mb-2 uppercase tracking-wide ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Auto-Assigned Faculty
+                  </label>
+                  <div className={`w-full p-3 rounded-lg border flex items-center gap-3 ${
+                    isDark ? "bg-[#5B5FC7]/10 border-[#7B83EB]/30 text-white" : "bg-indigo-50 border-indigo-200 text-indigo-900"
+                  }`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      isDark ? "bg-[#5B5FC7] text-white" : "bg-indigo-200 text-indigo-800"
+                    }`}>
+                      {activeCourseData.teacher.charAt(6)} {/* Extracts first letter of name after "Prof. " */}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold leading-tight">{activeCourseData.teacher}</span>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? "text-[#7B83EB]" : "text-indigo-600"}`}>
+                        Ticket will route to this account
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Title Input */}
@@ -269,7 +297,6 @@ export default function DoubtClearingHub() {
                 </div>
               ))
             ) : (
-              /* Original Empty State (if no tickets exist) */
               <div className={`rounded-xl p-10 text-center border ${isDark ? "bg-[#29282E] border-white/10" : "bg-slate-50 border-slate-200"}`}>
                 <div className="w-14 h-14 bg-[#5B5FC7]/15 border border-[#7B83EB]/30 rounded-full flex items-center justify-center text-[#7B83EB] mx-auto mb-4">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
