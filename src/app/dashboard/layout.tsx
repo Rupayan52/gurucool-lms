@@ -90,10 +90,31 @@ export default function DashboardLayout({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSignOut = () => {
-    // Closes the menu and explicitly routes back to the root login/landing page
+  const handleSignOut = async () => {
     setProfileOpen(false);
-    router.push("/");
+    
+    // 1. Preserve theme but wipe all other auth data from Local Storage
+    const savedTheme = localStorage.getItem("gurucool-theme");
+    localStorage.clear();
+    if (savedTheme) localStorage.setItem("gurucool-theme", savedTheme);
+    
+    // 2. Clear Session Storage
+    sessionStorage.clear();
+    
+    // 3. Clear standard auth cookies (JWT/Sessions)
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // 4. Optionally ping a logout API if you have one
+    try {
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    } catch (e) {}
+
+    // 5. Force a hard browser reload to the root to completely flush React state
+    window.location.href = "/";
   };
 
   const filteredSearch = SEARCH_INDEX.filter(
