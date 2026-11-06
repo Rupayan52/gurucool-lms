@@ -16,22 +16,29 @@ export async function GET() {
   try {
     const userId = await authenticate();
     
-    // Fetch Teacher + their registered subjects
     const teacher = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, name: true, email: true, avatarUrl: true, bio: true,
+        id: true, name: true, email: true, avatarUrl: true, bio: true, createdAt: true, // Fixed missing createdAt
         teacherRegistrations: {
           select: {
             subject: {
-              select: { id: true, name: true, _count: { select: { registrations: true } } }
+              select: { 
+                id: true, 
+                name: true, 
+                registrations: {
+                  select: {
+                    createdAt: true,
+                    student: { select: { id: true, name: true, email: true, avatarUrl: true } }
+                  }
+                } 
+              }
             }
           }
         }
       }
     });
 
-    // Fetch ALL available subjects in the database
     const allSubjects = await prisma.subject.findMany({
       select: { id: true, name: true }
     });
