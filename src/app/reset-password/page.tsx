@@ -1,12 +1,23 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
   const router = useRouter();
+
+  // Primary attempt: Next.js Hook
+  const [token, setToken] = useState<string | null>(searchParams.get("token"));
+
+  // Native Fallback: For mobile app browsers that strip Next.js query parsing
+  useEffect(() => {
+    if (!token && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const nativeToken = urlParams.get("token");
+      if (nativeToken) setToken(nativeToken);
+    }
+  }, [token]);
   
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
