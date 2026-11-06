@@ -31,6 +31,8 @@ model User {
   teacherCohorts  SubjectCohort[]  @relation("TeacherCohort")
   registrations    Registration[]
   mentoredSubjects Subject[] @relation("TeacherSubjects")
+  avatarUrl      String?
+  bio            String?
 }
 
 model SecurityLog {

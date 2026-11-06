@@ -1,15 +1,14 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleSignOut = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch (e) {}
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch (e) {}
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = "/login";
@@ -21,8 +20,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8F9FA] font-sans">
-      {/* Sidebar Command Center */}
+    <div className="flex h-screen bg-[#F8F9FA] font-sans overflow-hidden">
       <aside className="w-[260px] bg-[#111A2C] text-slate-300 flex flex-col flex-shrink-0 shadow-2xl z-20">
         <div className="p-6 border-b border-white/5">
           <h1 className="text-2xl font-black tracking-tight flex items-center gap-1.5">
@@ -30,7 +28,6 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             <span className="bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider ml-1 shadow-sm">FACULTY</span>
           </h1>
         </div>
-
         <div className="p-5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4 ml-2">Command Center</p>
           <nav className="space-y-1.5">
@@ -45,7 +42,6 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             })}
           </nav>
         </div>
-
         <div className="mt-auto p-5 border-t border-white/5">
           <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-semibold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-all">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -54,10 +50,19 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Top Header Bar */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0 shadow-sm z-10">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">{pathname.split('/').pop()?.replace('-', ' ')}</h2>
+          <div className="flex items-center gap-4">
+            <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg></button>
+            <button onClick={handleSignOut} className="text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-3 py-1.5 rounded-lg transition-colors border border-slate-200 hover:border-rose-200">Sign out</button>
+          </div>
+        </header>
+        <main className="flex-1 overflow-y-auto bg-slate-50/50">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
