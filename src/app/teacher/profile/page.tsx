@@ -1,83 +1,45 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-}
-
-interface Registration {
-  student: Student;
-  createdAt: string;
-}
-
-interface Subject {
-  id: string;
-  name: string;
-  registrations: Registration[];
-}
-
-interface TeacherProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-  avatarUrl?: string | null;
-  bio?: string | null;
-  mentoredSubjects: Subject[];
-}
-
-export default function TeacherProfilePage() {
-  const [profile, setProfile] = useState<TeacherProfile | null>(null);
+export default function ProfessionalTeacherProfile() {
+  const [profile, setProfile] = useState<any>(null);
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Edit State
-  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
-  const [saving, setSaving] = useState(false);
   
-  // Expanded Subject State
-  const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchProfile();
+    fetchData();
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchData = async () => {
     try {
       const res = await fetch("/api/teacher/profile");
-      if (!res.ok) throw new Error("Failed to fetch profile");
+      if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setProfile(data.teacher);
+      setAllSubjects(data.allSubjects);
       setEditName(data.teacher.name);
       setEditBio(data.teacher.bio || "");
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleSave = async () => {
     setSaving(true);
-    try {
-      await fetch("/api/teacher/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName, bio: editBio }),
-      });
-      await fetchProfile();
-      setIsEditing(false);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+    await fetch("/api/teacher/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editName, bio: editBio }),
+    });
+    setSaving(false);
+    fetchData(); // Refresh UI
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,10 +48,7 @@ export default function TeacherProfilePage() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        // Optimistic UI update
-        if (profile) setProfile({ ...profile, avatarUrl: base64String });
-        
-        // Save to DB
+        setProfile({ ...profile, avatarUrl: base64String });
         await fetch("/api/teacher/profile", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -100,138 +59,151 @@ export default function TeacherProfilePage() {
     }
   };
 
-  if (loading) return <div className="flex h-full items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div></div>;
-  if (!profile) return <div className="p-10 text-red-500 font-bold">Profile not found.</div>;
+  const registerForSubject = async (subjectId: string) => {
+    await fetch("/api/teacher/subjects/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subjectId }),
+    });
+    fetchData(); // Refresh to move it to Active Subjects
+  };
+
+  if (loading) return <div className="flex justify-center items-center h-full"><div className="w-8 h-8 border-4 border-pink-500/30 border-t-pink-500 rounded-full animate-spin"></div></div>;
+
+  // Filter out subjects the teacher is already registered for
+  const registeredSubjectIds = profile.teacherRegistrations.map((tr: any) => tr.subject.id);
+  const availableSubjects = allSubjects.filter(sub => !registeredSubjectIds.includes(sub.id));
 
   return (
-    <div className="max-w-5xl mx-auto p-8 animate-in fade-in duration-500 pb-20">
+    <div className="relative min-h-screen bg-[#F4F6F9] overflow-hidden p-6 lg:p-10 font-sans z-0">
       
-      {/* LINKEDIN STYLE HEADER CARD */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8 relative">
-        {/* Banner */}
-        <div className="h-40 w-full bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 relative">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-        </div>
+      {/* VIBRANT BACKGROUND ABSTRACT BLOBS */}
+      <div className="absolute top-20 right-0 w-72 h-72 bg-gradient-to-br from-pink-500 to-purple-500 rounded-3xl rotate-45 blur-[80px] opacity-40 -z-10 pointer-events-none"></div>
+      <div className="absolute -bottom-32 right-32 w-96 h-96 bg-gradient-to-br from-orange-400 to-pink-600 rounded-full blur-[100px] opacity-50 -z-10 pointer-events-none"></div>
+      
+      {/* PAGE HEADER */}
+      <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Faculty Dashboard</h1>
+        <p className="text-sm font-medium text-slate-500 mt-1">Welcome to the GuruCool professional portal</p>
+      </div>
 
-        {/* Profile Controls */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          {isEditing ? (
-            <>
-              <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-lg text-xs font-bold transition-all">Cancel</button>
-              <button onClick={handleSaveProfile} disabled={saving} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg transition-all">{saving ? "Saving..." : "Save Changes"}</button>
-            </>
-          ) : (
-            <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-lg text-xs font-bold shadow-lg transition-all flex items-center gap-2">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-              Edit Profile
-            </button>
-          )}
-        </div>
-
-        <div className="px-8 pb-8 relative">
-          {/* Avatar Area */}
-          <div className="relative -mt-16 mb-4 flex justify-between items-end">
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <div className="w-32 h-32 rounded-full border-4 border-white bg-slate-100 shadow-xl overflow-hidden flex items-center justify-center relative">
-                {profile.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-4xl font-black text-slate-400">{profile.name.charAt(0)}</span>
-                )}
-                {/* Upload Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl">
+        
+        {/* LEFT COLUMN: PROFESSIONAL PROFILE CARD */}
+        <div className="lg:col-span-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col h-full border border-slate-100/50">
+            
+            {/* Image Upload Area (Rectangular Portrait Style) */}
+            <div className="w-full h-72 bg-slate-100 relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                  <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span className="text-sm font-bold">Upload Portrait</span>
                 </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-md">Change Photo</span>
               </div>
               <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageUpload} />
             </div>
-          </div>
 
-          {/* User Details */}
-          <div className="max-w-2xl">
-            {isEditing ? (
-              <div className="space-y-4">
-                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full text-2xl font-black text-slate-900 border-b-2 border-blue-500 focus:outline-none bg-slate-50 p-2 rounded" placeholder="Your Name" />
-                <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3} className="w-full text-sm text-slate-600 border border-slate-300 focus:border-blue-500 focus:outline-none bg-slate-50 p-3 rounded-lg resize-none" placeholder="Add a professional bio or headline..." />
+            {/* Profile Form Details */}
+            <div className="p-8 flex-1 flex flex-col">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-black text-slate-900">My profile</h2>
+                <div className="text-right">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Account Created</p>
+                  <p className="text-[10px] text-slate-500 font-medium">{new Date(profile.createdAt).toLocaleDateString()}</p>
+                </div>
               </div>
+
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Full Name</label>
+                  <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full font-bold text-slate-800 border-b-2 border-slate-200 focus:border-pink-500 focus:outline-none bg-transparent py-2 transition-colors" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Email Address</label>
+                  <input type="text" readOnly value={profile.email} className="w-full font-medium text-slate-500 border-b-2 border-slate-100 bg-transparent py-2 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Professional Title / Bio</label>
+                  <input type="text" value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="e.g., Senior Physics Faculty" className="w-full font-medium text-slate-800 border-b-2 border-slate-200 focus:border-pink-500 focus:outline-none bg-transparent py-2 transition-colors" />
+                </div>
+              </div>
+
+              <div className="mt-auto flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600">Active Status</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                </div>
+                <button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white font-bold py-2.5 px-8 rounded-full shadow-[0_8px_20px_rgba(236,72,153,0.3)] transition-all active:scale-95">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: SUBJECT MANAGEMENT CARDS */}
+        <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-150">
+          
+          {/* Active Assigned Subjects */}
+          <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100/50">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-900">My Teaching Roster</h3>
+              <div className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full">{profile.teacherRegistrations.length} Active</div>
+            </div>
+
+            {profile.teacherRegistrations.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-6">You are not currently teaching any subjects.</p>
             ) : (
-              <>
-                <h1 className="text-3xl font-black text-slate-900">{profile.name}</h1>
-                <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mt-1 mb-4">{profile.role}</p>
-                <p className="text-sm text-slate-600 leading-relaxed max-w-3xl whitespace-pre-wrap">{profile.bio || "No biography provided. Click Edit Profile to add your professional headline."}</p>
-              </>
+              <div className="space-y-4">
+                {profile.teacherRegistrations.map((tr: any) => (
+                  <div key={tr.subject.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">{tr.subject.name}</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">{tr.subject._count.registrations} Students Enrolled</p>
+                    </div>
+                    <button className="mt-3 sm:mt-0 bg-gradient-to-r from-orange-400 to-rose-400 text-white text-[11px] font-bold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all active:scale-95">
+                      Manage Roster
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* ACADEMIC JURISDICTION & ENROLLED STUDENTS */}
-      <div>
-        <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-xl font-black text-slate-900">Academic Jurisdiction</h2>
-          <span className="px-3 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-full">{profile.mentoredSubjects.length} Active Subjects</span>
-        </div>
+          {/* Available Subjects Catalog */}
+          <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100/50 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-900">Available Subjects Catalog</h3>
+              <div className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full">{availableSubjects.length} Available</div>
+            </div>
 
-        {profile.mentoredSubjects.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-500">No subjects assigned yet.</div>
-        ) : (
-          <div className="space-y-4">
-            {profile.mentoredSubjects.map(subject => {
-              const isExpanded = expandedSubject === subject.id;
-              const studentCount = subject.registrations.length;
-
-              return (
-                <div key={subject.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
-                  {/* Subject Header (Clickable) */}
-                  <div 
-                    onClick={() => setExpandedSubject(isExpanded ? null : subject.id)}
-                    className="p-6 cursor-pointer hover:bg-slate-50 flex items-center justify-between transition-colors"
-                  >
+            {availableSubjects.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-6">All available subjects have been assigned.</p>
+            ) : (
+              <div className="space-y-5">
+                {availableSubjects.map(sub => (
+                  <div key={sub.id} className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-inner">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-slate-900">{subject.name}</h3>
-                        <p className="text-xs font-semibold text-slate-500 mt-0.5">{studentCount} Students Enrolled</p>
-                      </div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                      <h4 className="text-sm font-bold text-slate-700">{sub.name}</h4>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <button className="text-sm font-bold text-blue-600 hover:underline">{isExpanded ? "Close Roster" : "View Roster"}</button>
-                      <svg className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                    </div>
+                    <button onClick={() => registerForSubject(sub.id)} className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-[11px] font-bold px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all active:scale-95">
+                      Register
+                    </button>
                   </div>
-
-                  {/* Enrolled Students Roster (Expanded) */}
-                  {isExpanded && (
-                    <div className="border-t border-slate-100 bg-slate-50/50 p-6 animate-in slide-in-from-top-2 duration-300">
-                      {studentCount === 0 ? (
-                        <p className="text-sm text-slate-500 text-center py-4">No students are currently registered for this subject.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {subject.registrations.map(reg => (
-                            <div key={reg.student.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-4 hover:border-blue-300 transition-colors shadow-sm">
-                              <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm flex-shrink-0 overflow-hidden">
-                                {reg.student.avatarUrl ? <img src={reg.student.avatarUrl} className="w-full h-full object-cover" /> : reg.student.name.charAt(0)}
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="text-sm font-bold text-slate-900 truncate">{reg.student.name}</h4>
-                                <p className="text-[10px] text-slate-500 truncate">{reg.student.email}</p>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Joined {new Date(reg.createdAt).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
+        </div>
+      </div>
     </div>
   );
 }

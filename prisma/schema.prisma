@@ -194,3 +194,15 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model TeacherRegistration {
+  id         String   @id @default(uuid())
+  teacherId  String
+  subjectId  String
+  createdAt  DateTime @default(now())
+
+  teacher    User     @relation("TeacherRegistrations", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation("SubjectTeachers", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId])
+}

@@ -15,27 +15,30 @@ async function authenticate() {
 export async function GET() {
   try {
     const userId = await authenticate();
+    
+    // Fetch Teacher + their registered subjects
     const teacher = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, name: true, email: true, role: true, createdAt: true, avatarUrl: true, bio: true,
-        mentoredSubjects: {
+        id: true, name: true, email: true, avatarUrl: true, bio: true,
+        teacherRegistrations: {
           select: {
-            id: true, name: true,
-            registrations: {
-              select: {
-                student: { select: { id: true, name: true, email: true, avatarUrl: true } },
-                createdAt: true
-              }
+            subject: {
+              select: { id: true, name: true, _count: { select: { registrations: true } } }
             }
           }
         }
       }
     });
-    if (!teacher) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    return NextResponse.json({ teacher });
+
+    // Fetch ALL available subjects in the database
+    const allSubjects = await prisma.subject.findMany({
+      select: { id: true, name: true }
+    });
+
+    return NextResponse.json({ teacher, allSubjects });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: error.message === "Forbidden" ? 403 : 401 });
+    return NextResponse.json({ error: error.message }, { status: 401 });
   }
 }
 
@@ -43,17 +46,11 @@ export async function PATCH(req: Request) {
   try {
     const userId = await authenticate();
     const { name, bio, avatarUrl } = await req.json();
-
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(name && { name }),
-        ...(bio !== undefined && { bio }),
-        ...(avatarUrl !== undefined && { avatarUrl }),
-      }
+      data: { ...(name && { name }), ...(bio !== undefined && { bio }), ...(avatarUrl !== undefined && { avatarUrl }) }
     });
-
-    return NextResponse.json({ success: true, updated });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
