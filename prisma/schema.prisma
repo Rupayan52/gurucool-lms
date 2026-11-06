@@ -8,31 +8,32 @@ generator client {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  name            String           @unique
-  email           String           @unique
-  passwordHash    String
-  role            String           @default("STUDENT")
-  tokenVersion    Int              @default(0) // Used for instant session revocation
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  subscription    Subscription?
-  doubtTickets    DoubtTicket[]
-  enrollments     Enrollment[]
-  quizScores      QuizScore[]
-  deletionRequest DeletionRequest?
-  securityLogs    SecurityLog[]
-  teacherId       String?
-  teacher         User?            @relation("StudentFaculty", fields: [teacherId], references: [id])
-  students        User[]           @relation("StudentFaculty")
-  forumPosts      ForumPost[]      @relation("PostAuthor")
-  ownedChannels   ForumPost[]      @relation("ChannelOwner")
-  studentCohorts  SubjectCohort[]  @relation("StudentCohort")
-  teacherCohorts  SubjectCohort[]  @relation("TeacherCohort")
-  registrations    Registration[]
-  mentoredSubjects Subject[] @relation("TeacherSubjects")
-  avatarUrl      String?
-  bio            String?
+  id                   String                @id @default(uuid())
+  name                 String                @unique
+  email                String                @unique
+  passwordHash         String
+  role                 String                @default("STUDENT")
+  tokenVersion         Int                   @default(0) // Used for instant session revocation
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  subscription         Subscription?
+  doubtTickets         DoubtTicket[]
+  enrollments          Enrollment[]
+  quizScores           QuizScore[]
+  deletionRequest      DeletionRequest?
+  securityLogs         SecurityLog[]
+  teacherId            String?
+  teacher              User?                 @relation("StudentFaculty", fields: [teacherId], references: [id])
+  students             User[]                @relation("StudentFaculty")
+  forumPosts           ForumPost[]           @relation("PostAuthor")
+  ownedChannels        ForumPost[]           @relation("ChannelOwner")
+  studentCohorts       SubjectCohort[]       @relation("StudentCohort")
+  teacherCohorts       SubjectCohort[]       @relation("TeacherCohort")
+  registrations        Registration[]
+  mentoredSubjects     Subject[]             @relation("TeacherSubjects")
+  avatarUrl            String?
+  bio                  String?
+  teacherRegistrations TeacherRegistration[] @relation("TeacherRegistrations")
 }
 
 model SecurityLog {
@@ -61,16 +62,17 @@ model CourseClass {
 }
 
 model Subject {
-  id            String          @id @default(uuid())
-  name          String
-  courseClassId String
-  courseClass   CourseClass     @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
-  chapters      Chapter[]
-  ForumPost     ForumPost[]
-  cohorts       SubjectCohort[] @relation("SubjectCohort")
-  registrations Registration[]
-  teacherId     String?
-  teacher       User?      @relation("TeacherSubjects", fields: [teacherId], references: [id])
+  id                   String                @id @default(uuid())
+  name                 String
+  courseClassId        String
+  courseClass          CourseClass           @relation(fields: [courseClassId], references: [id], onDelete: Cascade)
+  chapters             Chapter[]
+  ForumPost            ForumPost[]
+  cohorts              SubjectCohort[]       @relation("SubjectCohort")
+  registrations        Registration[]
+  teacherId            String?
+  teacher              User?                 @relation("TeacherSubjects", fields: [teacherId], references: [id])
+  teacherRegistrations TeacherRegistration[] @relation("SubjectTeachers")
 }
 
 model Chapter {
@@ -83,16 +85,16 @@ model Chapter {
 }
 
 model Lesson {
-  id         String  @id @default(uuid())
-  title      String
-  chapterId  String
-  chapter    Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  orderIndex Int
-  videoUrl   String?
-  pdfUrl     String?
-  isLive Boolean @default(false)
-  liveUrl String?
-  broadcastType String @default("URL") // URL, NATIVE_WEBRTC, or PRE_RECORDED_LIVE
+  id                 String    @id @default(uuid())
+  title              String
+  chapterId          String
+  chapter            Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  orderIndex         Int
+  videoUrl           String?
+  pdfUrl             String?
+  isLive             Boolean   @default(false)
+  liveUrl            String?
+  broadcastType      String    @default("URL") // URL, NATIVE_WEBRTC, or PRE_RECORDED_LIVE
   scheduledStartTime DateTime?
 }
 
@@ -178,12 +180,13 @@ model SubjectCohort {
 }
 
 model Registration {
-  id         String   @id @default(uuid())
-  studentId  String
-  subjectId  String
-  createdAt  DateTime @default(now())
-  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  studentId String
+  subjectId String
+  createdAt DateTime @default(now())
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
   @@unique([studentId, subjectId])
 }
 
@@ -196,13 +199,13 @@ model PasswordResetToken {
 }
 
 model TeacherRegistration {
-  id         String   @id @default(uuid())
-  teacherId  String
-  subjectId  String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  teacherId String
+  subjectId String
+  createdAt DateTime @default(now())
 
-  teacher    User     @relation("TeacherRegistrations", fields: [teacherId], references: [id], onDelete: Cascade)
-  subject    Subject  @relation("SubjectTeachers", fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher User    @relation("TeacherRegistrations", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject Subject @relation("SubjectTeachers", fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, subjectId])
 }
