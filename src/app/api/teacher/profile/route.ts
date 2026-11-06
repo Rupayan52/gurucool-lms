@@ -24,8 +24,9 @@ export async function GET() {
         email: true,
         role: true,
         createdAt: true,
+        // Removed the invalid 'description' field to satisfy strict Prisma typing
         mentoredSubjects: {
-          select: { id: true, name: true, description: true }
+          select: { id: true, name: true }
         }
       }
     });
