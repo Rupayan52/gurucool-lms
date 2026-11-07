@@ -16,6 +16,11 @@ export default function CourseHubs() {
   const [meetReason, setMeetReason] = useState("");
   const [submittingMeet, setSubmittingMeet] = useState(false);
 
+  // Termination State
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endReason, setEndReason] = useState("");
+  const [ending, setEnding] = useState(false);
+
   useEffect(() => { fetchCourses(); }, []);
   
   useEffect(() => { 
@@ -62,11 +67,33 @@ export default function CourseHubs() {
     fetchCourses();
   };
 
-  const joinMeet = () => { if(activeView?.type === 'THREAD') window.location.href = "/live-session/" + activeView.threadData.id; };
+  // Secure New Tab Routing
+  const joinMeet = () => { 
+    if(activeView?.type === 'THREAD') {
+      window.open(`https://meet.ffmuc.net/GuruCool_1on1_${activeView.threadData.id}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`, '_blank');
+    }
+  };
+
+  // Inline Termination
+  const terminateWorkspace = async () => {
+    if (!endReason.trim() || !activeView || activeView.type !== 'THREAD') return;
+    setEnding(true);
+    try {
+      await fetch("/api/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: 'TERMINATE_MEET', threadId: activeView.threadData.id, reason: endReason })
+      });
+      setShowEndModal(false);
+      setEndReason("");
+      fetchCourses(); // Sync UI to show closed state
+    } catch (e) { console.error(e); } finally { setEnding(false); }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]); };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500">
+    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
       <div className="mb-6 flex-shrink-0"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Hubs</h1></div>
 
       <div className="flex gap-6 flex-1 min-h-0">
@@ -120,12 +147,7 @@ export default function CourseHubs() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Termination Reason</p>
                     <p className="text-sm font-medium text-slate-700 italic border-l-4 border-rose-400 pl-4 py-1">{activeView.threadData.terminationReason}</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    {activeView.threadData.recordingUrl && (
-                       <a href={activeView.threadData.recordingUrl} className="px-6 py-3.5 bg-blue-50 text-blue-600 font-bold rounded-xl text-sm border border-blue-100 flex items-center gap-2">View Recording</a>
-                    )}
-                    <button onClick={() => setShowMeetModal(true)} className="px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">Request New Meet</button>
-                </div>
+                <button onClick={() => setShowMeetModal(true)} className="px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">Request New Meet</button>
             </div>
 
           ) : (
@@ -140,7 +162,10 @@ export default function CourseHubs() {
                   </div>
                 </div>
                 {activeView.type === 'THREAD' && (
-                  <button onClick={joinMeet} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2">Join Live Session</button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setShowEndModal(true)} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all">Terminate Workspace</button>
+                    <button onClick={joinMeet} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">Join Live Session</button>
+                  </div>
                 )}
               </div>
 
@@ -178,6 +203,7 @@ export default function CourseHubs() {
         </div>
       </div>
 
+      {/* MEET REQUEST MODAL (CYCLIC) */}
       {showMeetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
@@ -187,6 +213,21 @@ export default function CourseHubs() {
             <div className="flex gap-3">
               <button onClick={() => setShowMeetModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">Cancel</button>
               <button onClick={requestMeet} disabled={submittingMeet} className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md">Submit Request</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INLINE TERMINATION MODAL */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
+            <h3 className="text-xl font-black text-rose-600 mb-2">Terminate Workspace</h3>
+            <p className="text-xs text-slate-500 mb-6">Closing this workspace requires a valid reason. This reason will be logged and visible to the faculty.</p>
+            <textarea value={endReason} onChange={e => setEndReason(e.target.value)} rows={3} className="w-full border border-slate-200 rounded-xl p-4 text-sm text-slate-700 focus:outline-none focus:border-rose-500 resize-none mb-6" placeholder="e.g., Session concluded, all doubts resolved..." />
+            <div className="flex gap-3">
+              <button onClick={() => setShowEndModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">Cancel</button>
+              <button onClick={terminateWorkspace} disabled={ending || !endReason.trim()} className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-50">{ending ? "Closing..." : "Confirm Close"}</button>
             </div>
           </div>
         </div>

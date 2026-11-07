@@ -15,6 +15,11 @@ export default function ResolutionCenterPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Termination State
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endReason, setEndReason] = useState("");
+  const [ending, setEnding] = useState(false);
+
   useEffect(() => { fetchData(); }, []);
   
   useEffect(() => { 
@@ -70,13 +75,35 @@ export default function ResolutionCenterPage() {
     fetchData(); 
   };
 
-  const joinMeet = () => { if(activeView?.type === 'THREAD') window.location.href = "/live-session/" + activeView.id; };
+  // Secure New Tab Routing
+  const joinMeet = () => { 
+    if(activeView?.type === 'THREAD') {
+      window.open(`https://meet.ffmuc.net/GuruCool_1on1_${activeView.id}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`, '_blank');
+    }
+  };
+
+  // Inline Termination
+  const terminateWorkspace = async () => {
+    if (!endReason.trim() || !activeView || activeView.type !== 'THREAD') return;
+    setEnding(true);
+    try {
+      await fetch("/api/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: 'TERMINATE_MEET', threadId: activeView.id, reason: endReason })
+      });
+      setShowEndModal(false);
+      setEndReason("");
+      fetchData(); // Sync UI to show closed state
+    } catch (e) { console.error(e); } finally { setEnding(false); }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]); };
 
   if (!profile) return <div className="flex justify-center items-center h-full"><div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div></div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500">
+    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
       <div className="mb-6 flex-shrink-0">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Resolution Center</h1>
       </div>
@@ -145,12 +172,6 @@ export default function ResolutionCenterPage() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Termination Reason</p>
                     <p className="text-sm font-medium text-slate-700 italic border-l-4 border-rose-400 pl-4 py-1">{activeView.threadData.terminationReason}</p>
                 </div>
-                {activeView.threadData.recordingUrl && (
-                   <a href={activeView.threadData.recordingUrl} className="px-6 py-3 bg-blue-50 text-blue-600 font-bold rounded-xl text-sm border border-blue-100 flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                      View Session Recording
-                   </a>
-                )}
             </div>
 
           ) : (
@@ -158,35 +179,31 @@ export default function ResolutionCenterPage() {
              <>
               <div className="h-[72px] flex-shrink-0 border-b border-slate-100 flex items-center justify-between px-8 bg-white z-10">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${activeView.type === 'HUB' ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600 rounded-full'}`}>{activeView.type === 'HUB' ? '#' : activeView.name.charAt(0)}</div>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${activeView.type === 'HUB' ? 'bg-indigo-100 text-indigo-600' : 'bg-blue-100 text-blue-600 rounded-full'}`}>{activeView.type === 'HUB' ? '#' : activeView.name.charAt(0)}</div>
                   <div>
                     <h2 className="text-lg font-black text-slate-900">{activeView.name}</h2>
                     {activeView.type === 'THREAD' && activeView.threadData?.approvedDate && <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Scheduled: {new Date(activeView.threadData.approvedDate).toLocaleString()}</p>}
                   </div>
                 </div>
                 {activeView.type === 'THREAD' && (
-                  <button onClick={joinMeet} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> Join Live Session
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setShowEndModal(true)} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all">Terminate Workspace</button>
+                    <button onClick={joinMeet} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">Join Live Session</button>
+                  </div>
                 )}
               </div>
 
               <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 flex flex-col gap-6">
-                {messages.length === 0 && (
-                   <div className="flex flex-col items-center justify-center h-full text-center opacity-70">
-                    <h3 className="text-2xl font-black text-slate-800 mb-2">Welcome to {activeView.name}</h3>
-                  </div>
-                )}
                 {messages.map((msg, idx) => (
                   <div key={idx} className="flex gap-4">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold overflow-hidden shadow-sm bg-indigo-100 text-indigo-600">{msg.sender.avatarUrl ? <img src={msg.sender.avatarUrl} className="w-full h-full object-cover"/> : msg.sender.name.charAt(0)}</div>
                     <div className="flex flex-col items-start max-w-[80%]">
-                      <div className="flex items-baseline gap-2 mb-1"><span className="font-bold text-slate-800 text-sm">{msg.sender.name}</span></div>
+                      <div className="flex items-baseline gap-2 mb-1"><span className="font-bold text-slate-800 text-sm">{msg.sender.name}</span><span className="text-[10px] text-slate-400 font-medium">{new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
                       <div className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl shadow-sm text-sm whitespace-pre-wrap">
                         {msg.content}
                         {msg.fileUrl && (
                           <div className="mt-2 pt-2 border-t border-slate-100">
-                            {msg.fileType?.startsWith('image/') ? <img src={msg.fileUrl} className="max-w-xs rounded-xl border border-slate-200" /> : <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 hover:underline font-bold text-xs">{msg.fileName}</a>}
+                            {msg.fileType?.startsWith('image/') ? <img src={msg.fileUrl} className="max-w-xs rounded-xl border border-slate-200" /> : msg.fileType?.startsWith('video/') ? <video src={msg.fileUrl} controls className="max-w-xs rounded-xl border border-slate-200" /> : <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 hover:underline font-bold text-xs">{msg.fileName}</a>}
                           </div>
                         )}
                       </div>
@@ -197,18 +214,33 @@ export default function ResolutionCenterPage() {
               </div>
 
               <div className="p-6 bg-white border-t border-slate-100 flex-shrink-0">
-                {selectedFile && <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-100 px-4 py-2 rounded-xl"><span className="text-xs font-bold text-blue-700 truncate">{selectedFile.name}</span><button onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} className="text-blue-400">x</button></div>}
+                {selectedFile && <div className="mb-3 flex items-center justify-between bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl"><span className="text-xs font-bold text-indigo-700 truncate">{selectedFile.name}</span><button onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} className="text-indigo-400 hover:text-indigo-600">x</button></div>}
                 <div className="flex items-center gap-3 p-2 pl-4 border border-slate-200 rounded-2xl bg-[#F8FAFC]">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                  <button onClick={() => fileInputRef.current?.click()} className="text-slate-400 hover:text-blue-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></button>
+                  <button onClick={() => fileInputRef.current?.click()} className="text-slate-400 hover:text-indigo-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></button>
                   <input type="text" value={messageText} onChange={(e) => setMessageText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage()} placeholder="Message..." className="flex-1 bg-transparent border-none focus:outline-none text-slate-700 text-sm font-medium" />
-                  <button onClick={sendMessage} className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center"><svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></button>
+                  <button onClick={sendMessage} className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center"><svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></button>
                 </div>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* INLINE TERMINATION MODAL */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8">
+            <h3 className="text-xl font-black text-rose-600 mb-2">Terminate Workspace</h3>
+            <p className="text-xs text-slate-500 mb-6">Closing this workspace requires a valid reason. This reason will be logged and visible to the student.</p>
+            <textarea value={endReason} onChange={e => setEndReason(e.target.value)} rows={3} className="w-full border border-slate-200 rounded-xl p-4 text-sm text-slate-700 focus:outline-none focus:border-rose-500 resize-none mb-6" placeholder="e.g., Session concluded, all doubts resolved..." />
+            <div className="flex gap-3">
+              <button onClick={() => setShowEndModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">Cancel</button>
+              <button onClick={terminateWorkspace} disabled={ending || !endReason.trim()} className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-50">{ending ? "Closing..." : "Confirm Close"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
