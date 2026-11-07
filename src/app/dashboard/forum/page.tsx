@@ -94,7 +94,7 @@ export default function CourseHubs() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
-      <div className="mb-6 flex-shrink-0"><div className="flex items-center justify-between w-full"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Hubs</h1><a href="/dashboard/curriculum" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">Curriculum, Quizzes & Assignments →</a></div></div>
+      <div className="mb-6 flex-shrink-0"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Hubs</h1></div>
 
       <div className="flex gap-6 flex-1 min-h-0">
         <div className="w-72 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2">

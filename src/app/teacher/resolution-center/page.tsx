@@ -105,7 +105,7 @@ export default function ResolutionCenterPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
       <div className="mb-6 flex-shrink-0">
-        <div className="flex items-center justify-between w-full"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Resolution Center</h1><a href="/teacher/curriculum" className="px-5 py-2.5 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold text-xs rounded-full shadow-md hover:opacity-95 transition-all">Curriculum & Grading Studio →</a></div>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Resolution Center</h1>
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
