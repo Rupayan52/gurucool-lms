@@ -9,9 +9,15 @@ export async function POST(req: Request) {
     const token = cookieStore.get("auth_token")?.value;
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
-    const { subjectId } = await req.json();
+    // Extract both userId AND role from the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string, role: string };
+    
+    // STRICT RBAC: Block Teachers/Admins from registering as students
+    if (decoded.role === "TEACHER" || decoded.role === "FACULTY" || decoded.role === "ADMIN") {
+      return NextResponse.json({ error: "Faculty accounts cannot enroll as students." }, { status: 403 });
+    }
 
+    const { subjectId } = await req.json();
     if (!subjectId) return NextResponse.json({ error: "Missing subjectId" }, { status: 400 });
 
     // Link the student to the subject in the database
@@ -24,7 +30,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    // If they click twice and trigger a unique constraint error, fail silently/successfully
     if (error.code === 'P2002') return NextResponse.json({ success: true });
     console.error("Registration Error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
