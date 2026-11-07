@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 async function authenticate() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("token_teacher")?.value;
+  const token = cookieStore.get("token_teacher")?.value || cookieStore.get("auth_token")?.value;
   if (!token) throw new Error("Unauthorized");
   const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string, role: string };
   if (decoded.role !== "TEACHER" && decoded.role !== "FACULTY") throw new Error("Forbidden");
@@ -38,6 +38,85 @@ export async function GET() {
         }
       }
     });
+
+    // Fetch real quizzes and assignments created by this teacher to calculate authentic student metrics
+    const quizzes = await prisma.academicQuiz.findMany({
+      where: { teacherId: userId },
+      include: { attempts: true }
+    });
+
+    const assignments = await prisma.academicAssignment.findMany({
+      where: { teacherId: userId },
+      include: { submissions: true }
+    });
+
+    if (teacher) {
+      teacher.teacherRegistrations = teacher.teacherRegistrations.map((tr: any) => {
+        const subId = tr.subject.id;
+        const subjectQuizzes = quizzes.filter(q => q.subjectId === subId);
+        const subjectAssignments = assignments.filter(a => a.subjectId === subId);
+
+        const enrichedRegs = tr.subject.registrations.map((reg: any) => {
+          const stId = reg.student.id;
+          
+          // Quiz Metrics
+          let earnedQuizPts = 0;
+          let totalQuizPts = 0;
+          let quizzesTaken = 0;
+          subjectQuizzes.forEach(q => {
+            const att = q.attempts.find(a => a.studentId === stId);
+            if (att) {
+              quizzesTaken++;
+              earnedQuizPts += att.score;
+              totalQuizPts += att.maxScore;
+            }
+          });
+          const quizAvg = totalQuizPts > 0 ? Math.round((earnedQuizPts / totalQuizPts) * 100) : null;
+
+          // Assignment Metrics
+          let submittedCount = 0;
+          let gradedCount = 0;
+          let earnedMarks = 0;
+          let totalMaxMarks = 0;
+          subjectAssignments.forEach(a => {
+            const sub = a.submissions.find(s => s.studentId === stId);
+            if (sub) {
+              submittedCount++;
+              if (sub.status === "GRADED" && sub.awardedMarks !== null) {
+                gradedCount++;
+                earnedMarks += sub.awardedMarks;
+                totalMaxMarks += a.maxMarks;
+              }
+            }
+          });
+          const assignmentAvg = totalMaxMarks > 0 ? Math.round((earnedMarks / totalMaxMarks) * 100) : null;
+
+          return {
+            ...reg,
+            student: {
+              ...reg.student,
+              metrics: {
+                quizzesTaken,
+                totalQuizzes: subjectQuizzes.length,
+                quizAvg,
+                submittedCount,
+                totalAssignments: subjectAssignments.length,
+                gradedCount,
+                assignmentAvg
+              }
+            }
+          };
+        });
+
+        return {
+          ...tr,
+          subject: {
+            ...tr.subject,
+            registrations: enrichedRegs
+          }
+        };
+      });
+    }
 
     const allSubjects = await prisma.subject.findMany({
       select: { id: true, name: true }

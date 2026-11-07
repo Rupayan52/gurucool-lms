@@ -85,7 +85,7 @@ export default function ProfessionalTeacherProfile() {
       <div className="absolute -bottom-32 right-32 w-96 h-96 bg-gradient-to-br from-orange-400 to-pink-600 rounded-full blur-[100px] opacity-50 -z-10 pointer-events-none"></div>
       
       <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Faculty Dashboard</h1>
+        <div className="flex items-center justify-between w-full"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Faculty Dashboard</h1><a href="/teacher/curriculum" className="px-6 py-3 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold text-xs rounded-full shadow-md hover:opacity-95 transition-all">Open Curriculum & Grading Studio →</a></div>
         <p className="text-sm font-medium text-slate-500 mt-1">Welcome to the GuruCool professional portal</p>
       </div>
 
@@ -269,16 +269,19 @@ export default function ProfessionalTeacherProfile() {
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Attendance</p>
-                  <p className="text-2xl font-black text-emerald-500">96%</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Quiz Average</p>
+                  <p className="text-2xl font-black text-emerald-500">{activeStudent.metrics?.quizAvg !== null && activeStudent.metrics?.quizAvg !== undefined ? activeStudent.metrics.quizAvg + "%" : "N/A"}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{activeStudent.metrics?.quizzesTaken || 0}/{activeStudent.metrics?.totalQuizzes || 0} Taken</p>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assessments</p>
-                  <p className="text-2xl font-black text-blue-500">4/5</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assignments</p>
+                  <p className="text-2xl font-black text-blue-500">{activeStudent.metrics?.submittedCount || 0}/{activeStudent.metrics?.totalAssignments || 0}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{activeStudent.metrics?.gradedCount || 0} Graded</p>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Doubt Tickets</p>
-                  <p className="text-2xl font-black text-orange-500">2</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assignment Score</p>
+                  <p className="text-2xl font-black text-orange-500">{activeStudent.metrics?.assignmentAvg !== null && activeStudent.metrics?.assignmentAvg !== undefined ? activeStudent.metrics.assignmentAvg + "%" : "N/A"}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Verified Grade</p>
                 </div>
               </div>
 
