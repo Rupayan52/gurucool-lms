@@ -26,8 +26,7 @@ export default function CourseHubs() {
   const [activeView, setActiveView] = useState<{ type: "channel" | "dm", id: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [studentEmail] = useState("xyz@gmail.com");
-
+  
   // 1-on-1 Request State Mapping (Key: teacherId, Value: DMRequestState)
   const [dmStates, setDmStates] = useState<Record<string, DMRequestState>>({});
   const [requestDraft, setRequestDraft] = useState("");
@@ -47,11 +46,7 @@ export default function CourseHubs() {
     const fetchChannels = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/student/courses", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ studentEmail })
-        });
+        const res = await fetch("/api/student/courses");
         
         if (res.ok) {
           const data: CourseOption[] = await res.json();
@@ -79,7 +74,7 @@ export default function CourseHubs() {
 
     fetchChannels();
     return () => window.removeEventListener("gurucool-theme-change", handleThemeChange);
-  }, [studentEmail]);
+  }, []);
 
   const isDark = theme === "dark";
 

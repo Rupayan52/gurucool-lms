@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
-export async function POST() {
+export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth_token")?.value;
@@ -11,7 +11,7 @@ export async function POST() {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
 
-    // Fetch the subjects the student is registered for
+    // Fetch the subjects strictly registered to this active student
     const registrations = await prisma.registration.findMany({
       where: { studentId: decoded.userId },
       include: {
@@ -27,10 +27,10 @@ export async function POST() {
       }
     });
 
-    // Format the payload to build the dual-pane UI
+    // Format the payload to build the dual-pane Course Hubs UI
     const courses = registrations.map(reg => {
       const sub = reg.subject;
-      // If multiple teachers exist, pick the first one as primary mentor for the channel
+      // Extract the primary mentor for the channel header
       const primaryTeacher = sub.teacherRegistrations.length > 0 ? sub.teacherRegistrations[0].teacher : null;
       
       return {
@@ -44,6 +44,7 @@ export async function POST() {
 
     return NextResponse.json(courses);
   } catch (error) {
+    console.error("Courses Fetch Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
