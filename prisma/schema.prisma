@@ -229,6 +229,11 @@ model Message {
   sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
   subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   thread    DirectThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fileUrl      String?
+  fileName     String?
+  fileType     String?
+  isFlagged    Boolean @default(false)
+  hubTeacherId String? // Partitions Subject Hubs by Teacher
 }
 
 model DirectThread {
