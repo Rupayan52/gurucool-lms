@@ -73,7 +73,7 @@ export default function CourseHubs() {
     if (fileInputRef.current) fileInputRef.current.value = "";
     
     const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    if (res.ok) setMessages(prev => [...prev, await res.json()]);
+    if (res.ok) { const newMsg = await res.json(); setMessages(prev => [...prev, newMsg]); }
   };
 
   const requestMeet = async () => {
