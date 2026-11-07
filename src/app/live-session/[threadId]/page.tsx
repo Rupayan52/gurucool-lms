@@ -8,8 +8,8 @@ export default function LiveSessionRoom({ params }: { params: { threadId: string
   const [endReason, setEndReason] = useState("");
   const [ending, setEnding] = useState(false);
 
-  // Dynamically generate a secure, unique Jitsi room using your exact ffmuc.net configuration
-  const roomUrl = `https://meet.ffmuc.net/GuruCool_1on1_${params.threadId}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`;
+  // Switch to meet.jit.si which explicitly allows iframe embedding
+  const roomUrl = `https://meet.jit.si/GuruCool_1on1_${params.threadId}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`;
 
   const terminateSession = async () => {
     if (!endReason.trim()) return;
@@ -20,7 +20,7 @@ export default function LiveSessionRoom({ params }: { params: { threadId: string
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: 'TERMINATE_MEET', threadId: params.threadId, reason: endReason })
       });
-      router.push("/"); // Smart middleware routes users back to their respective dashboards
+      router.push("/"); 
     } catch (e) {
       console.error(e);
       setEnding(false);
@@ -46,9 +46,13 @@ export default function LiveSessionRoom({ params }: { params: { threadId: string
          </button>
       </div>
 
-      {/* EMBEDDED VIDEO SERVICE */}
+      {/* EMBEDDED JITSI VIDEO SERVICE */}
       <div className="flex-1 w-full relative bg-black">
-         <iframe src={roomUrl} allow="camera; microphone; fullscreen; display-capture; autoplay" className="w-full h-full border-none" />
+         <iframe 
+            src={roomUrl} 
+            allow="camera; microphone; fullscreen; display-capture; autoplay" 
+            className="w-full h-full border-none"
+         />
       </div>
 
       {/* TERMINATION MODAL */}
@@ -61,7 +65,13 @@ export default function LiveSessionRoom({ params }: { params: { threadId: string
             <h3 className="text-2xl font-black mb-2 text-white">Terminate Live Session</h3>
             <p className="text-xs text-slate-400 mb-6 leading-relaxed">Ending this session will disconnect both parties. You must provide a valid reason for termination. This will be logged and visible to the other participant in their dashboard.</p>
             
-            <textarea value={endReason} onChange={e => setEndReason(e.target.value)} rows={3} className="w-full bg-[#16161A] border border-white/10 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none mb-6 placeholder-slate-600" placeholder="e.g., Covered all doubts, moving to next module..." />
+            <textarea 
+                value={endReason} 
+                onChange={e => setEndReason(e.target.value)} 
+                rows={3} 
+                className="w-full bg-[#16161A] border border-white/10 rounded-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 resize-none mb-6 placeholder-slate-600" 
+                placeholder="e.g., Covered all doubts, moving to next module..." 
+            />
             
             <div className="flex gap-3">
               <button onClick={() => setShowEndModal(false)} className="flex-1 py-3 bg-[#25252B] hover:bg-[#2F2F37] font-bold rounded-xl text-sm transition-colors border border-white/5">Return to Call</button>

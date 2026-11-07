@@ -59,7 +59,7 @@ export async function POST(req: Request) {
           isClosed: true, 
           terminationReason: reason,
           terminatedById: auth.userId,
-          recordingUrl: `https://meet.ffmuc.net/recordings/GuruCool_${threadId}.mp4`
+          recordingUrl: `https://meet.jit.si/recordings/GuruCool_${threadId}.mp4`
         }
       });
       return NextResponse.json({ success: true, updated });
