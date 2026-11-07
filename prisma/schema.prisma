@@ -34,6 +34,11 @@ model User {
   avatarUrl            String?
   bio                  String?
   teacherRegistrations TeacherRegistration[] @relation("TeacherRegistrations")
+  messages Message[]
+  studentThreads DirectThread[] @relation("StudentThreads")
+  teacherThreads DirectThread[] @relation("TeacherThreads")
+  studentModeration ModerationAction[] @relation("StudentModeration")
+  teacherModeration ModerationAction[] @relation("TeacherModeration")
 }
 
 model SecurityLog {
@@ -73,6 +78,8 @@ model Subject {
   teacherId            String?
   teacher              User?                 @relation("TeacherSubjects", fields: [teacherId], references: [id])
   teacherRegistrations TeacherRegistration[] @relation("SubjectTeachers")
+  messages Message[]
+  moderation ModerationAction[]
 }
 
 model Chapter {
@@ -208,4 +215,47 @@ model TeacherRegistration {
   subject Subject @relation("SubjectTeachers", fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, subjectId])
+}
+
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  senderId  String
+  subjectId String?  // Null if direct message
+  threadId  String?  // Null if group message
+  createdAt DateTime @default(now())
+
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  thread    DirectThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model DirectThread {
+  id        String   @id @default(uuid())
+  studentId String
+  teacherId String
+  isLocked  Boolean  @default(true) // Teacher must approve to unlock
+  createdAt DateTime @default(now())
+
+  student   User     @relation("StudentThreads", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   User     @relation("TeacherThreads", fields: [teacherId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@unique([studentId, teacherId])
+}
+
+model ModerationAction {
+  id        String   @id @default(uuid())
+  studentId String
+  teacherId String
+  subjectId String
+  isMuted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  student   User     @relation("StudentModeration", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   User     @relation("TeacherModeration", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId])
 }
