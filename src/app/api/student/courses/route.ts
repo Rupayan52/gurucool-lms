@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-const prisma = new PrismaClient();
-
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    const { studentEmail } = await req.json();
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
 
-    const student = await prisma.user.findUnique({ 
-      where: { email: studentEmail },
+    // Fetch the subjects the student is registered for
+    const registrations = await prisma.registration.findMany({
+      where: { studentId: decoded.userId },
       include: {
-        registrations: {
+        subject: {
           include: {
-            subject: {
+            teacherRegistrations: {
               include: {
-                teacher: { select: { id: true, name: true, email: true } }
+                teacher: { select: { id: true, name: true, email: true, avatarUrl: true } }
               }
             }
           }
@@ -22,20 +27,23 @@ export async function POST(req: Request) {
       }
     });
 
-    if (!student) return NextResponse.json([], { status: 404 });
+    // Format the payload to build the dual-pane UI
+    const courses = registrations.map(reg => {
+      const sub = reg.subject;
+      // If multiple teachers exist, pick the first one as primary mentor for the channel
+      const primaryTeacher = sub.teacherRegistrations.length > 0 ? sub.teacherRegistrations[0].teacher : null;
+      
+      return {
+        id: sub.id,
+        name: sub.name,
+        teacherId: primaryTeacher ? primaryTeacher.id : null,
+        teacherName: primaryTeacher ? primaryTeacher.name : "Pending",
+        teacherEmail: primaryTeacher ? primaryTeacher.email : null
+      };
+    });
 
-    // Extract exactly what the frontend composer needs
-    const activeCourses = student.registrations.map(reg => ({
-      id: reg.subject.id,
-      name: reg.subject.name,
-      teacherId: reg.subject.teacher?.id,
-      teacherName: reg.subject.teacher?.name || reg.subject.teacher?.email || "Unassigned",
-      teacherEmail: reg.subject.teacher?.email
-    }));
-
-    return NextResponse.json(activeCourses);
+    return NextResponse.json(courses);
   } catch (error) {
-    console.error("Failed to fetch registered courses:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }

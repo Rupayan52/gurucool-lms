@@ -19,7 +19,7 @@ export async function GET() {
     const teacher = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, name: true, email: true, avatarUrl: true, bio: true, createdAt: true, // Fixed missing createdAt
+        id: true, name: true, email: true, avatarUrl: true, bio: true, createdAt: true,
         teacherRegistrations: {
           select: {
             subject: {
@@ -53,7 +53,7 @@ export async function PATCH(req: Request) {
   try {
     const userId = await authenticate();
     const { name, bio, avatarUrl } = await req.json();
-    const updated = await prisma.user.update({
+    await prisma.user.update({
       where: { id: userId },
       data: { ...(name && { name }), ...(bio !== undefined && { bio }), ...(avatarUrl !== undefined && { avatarUrl }) }
     });
