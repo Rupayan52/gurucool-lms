@@ -3,26 +3,28 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  
-  // Define exactly which pages should bounce a logged-in user away
   const isAuthPage = path === '/login' || path === '/register' || path === '/forgot-password' || path === '/reset-password';
   
-  // Define exactly which pages require a login
-  const isProtectedPage = path.startsWith('/dashboard') || path.startsWith('/admin');
-  
-  const token = request.cookies.get('auth_token')?.value || '';
+  const studentToken = request.cookies.get('token_student')?.value;
+  const teacherToken = request.cookies.get('token_teacher')?.value;
+  const legacyToken = request.cookies.get('auth_token')?.value;
 
-  // Prevent logged-in users from seeing the login/register forms
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Smart routing: If logged in, prevent access to login/register screens
+  if (isAuthPage) {
+    if (teacherToken) return NextResponse.redirect(new URL('/teacher/resolution-center', request.url));
+    if (studentToken || legacyToken) return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Prevent guests from seeing the dashboard or admin panels
-  if (isProtectedPage && !token) {
+  // Protect Teacher jurisdictional boundaries
+  if (path.startsWith('/teacher') && !teacherToken) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Allow ALL other routes to render normally
+  // Protect Student jurisdictional boundaries
+  if (path.startsWith('/dashboard') && !studentToken && !legacyToken) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   return NextResponse.next();
 }
 

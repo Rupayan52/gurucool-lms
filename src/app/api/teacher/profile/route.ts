@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 async function authenticate() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const token = cookieStore.get("token_teacher")?.value;
   if (!token) throw new Error("Unauthorized");
   const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string, role: string };
   if (decoded.role !== "TEACHER" && decoded.role !== "FACULTY") throw new Error("Forbidden");
