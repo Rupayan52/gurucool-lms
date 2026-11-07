@@ -380,6 +380,32 @@ export default function ProfessionalTeacherProfile() {
                 </div>
               </div>
 
+              <div className="mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3 text-left">
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Institution</p>
+                  <p className="text-xs font-bold text-slate-800">{activeStudent.extendedProfile?.institution || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Target Track</p>
+                  <p className="text-xs font-bold text-slate-800">{activeStudent.extendedProfile?.targetExam || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Learning Style</p>
+                  <p className="text-xs font-bold text-slate-800">{activeStudent.extendedProfile?.learningStyle || "Standard"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Student Phone</p>
+                  <p className="text-xs font-bold text-slate-800">{activeStudent.extendedProfile?.phone || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Guardian Contact</p>
+                  <p className="text-xs font-bold text-slate-800">{activeStudent.extendedProfile?.guardianName ? activeStudent.extendedProfile.guardianName + " (" + (activeStudent.extendedProfile.guardianPhone || "") + ")" : "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-slate-400">Study Goal</p>
+                  <p className="text-xs font-bold text-pink-600">{activeStudent.extendedProfile?.dailyStudyGoalHrs || 4} hrs/day</p>
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Quiz Average</p>

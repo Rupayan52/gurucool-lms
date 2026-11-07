@@ -169,6 +169,7 @@ export default function DashboardLayout({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1.8" /><line x1="9" y1="4" x2="9" y2="20" strokeWidth="1.8" /></svg>
           </button>
         </div>
+<a href="/dashboard/profile" className="mt-3 block w-full text-center py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all">View & Edit Full Profile →</a>
 
         {/* Search Bar */}
         <div ref={searchContainerRef} className="flex-1 max-w-xl mx-4 relative">
@@ -377,6 +378,8 @@ export default function DashboardLayout({
                           <Link href="/dashboard/forum" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/forum" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>General & Course Hubs</Link>
                           <Link href="/dashboard/doubts" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/doubts" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>Doubt Clearing Hub</Link>
                           <Link href="/dashboard/catalog" className={`block px-3 py-1.5 rounded-md transition-colors ${pathname === "/dashboard/catalog" ? isDark ? "bg-[#2D2741] text-white font-semibold" : "bg-indigo-50 text-[#5B5FC7] font-semibold" : isDark ? "text-slate-400 hover:text-white hover:bg-white/[0.04]" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"}`}>Course Catalog</Link>
+<a href="/dashboard/profile" className="block px-3 py-2 rounded-lg text-xs font-bold text-emerald-400 hover:bg-white/5 transition-all">My Profile & Dossier</a>
+<a href="/dashboard/curriculum" className="block px-3 py-2 rounded-lg text-xs font-bold text-indigo-400 hover:bg-white/5 transition-all">Curriculum & Tests</a>
                         </div>
                       </div>
                     )}

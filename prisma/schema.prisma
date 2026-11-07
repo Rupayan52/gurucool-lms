@@ -381,3 +381,28 @@ model AcademicDoubt {
   createdAt       DateTime  @default(now())
   resolvedAt      DateTime?
 }
+
+model StudentProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  headline          String?
+  institution       String?
+  academicLevel     String?
+  targetExam        String?
+  graduationYear    String?
+  phone             String?
+  location          String?
+  dateOfBirth       String?
+  guardianName      String?
+  guardianPhone     String?
+  learningStyle     String?
+  dailyStudyGoalHrs Float    @default(4)
+  availability      String   @default("Available")
+  careerGoals       String?
+  skillsTags        String? // JSON stringified array of tags
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  bannerTheme       String   @default("INDIGO_CYBER")
+  updatedAt         DateTime @updatedAt
+}

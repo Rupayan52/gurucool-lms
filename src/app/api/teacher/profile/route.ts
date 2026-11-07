@@ -45,6 +45,8 @@ export async function GET() {
       include: { attempts: true }
     });
 
+    const studentProfiles = await prisma.studentProfile.findMany();
+    const profileMap = Object.fromEntries(studentProfiles.map((sp: any) => [sp.userId, sp]));
     const assignments = await prisma.academicAssignment.findMany({
       where: { teacherId: userId },
       include: { submissions: true }
@@ -95,6 +97,7 @@ export async function GET() {
             ...reg,
             student: {
               ...reg.student,
+              extendedProfile: profileMap[stId] || null,
               metrics: {
                 quizzesTaken,
                 totalQuizzes: subjectQuizzes.length,
