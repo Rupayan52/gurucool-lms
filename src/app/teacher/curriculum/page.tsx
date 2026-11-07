@@ -280,14 +280,7 @@ export default function TeacherCurriculumStudio() {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Academic & Curriculum Studio</h1>
           <p className="text-sm font-medium text-slate-500 mt-1">Design syllabus modules, upload topic content, build quizzes, and grade student submissions.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/teacher/resolution-center" className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shadow-sm">
-            Resolution Center
-          </Link>
-          <Link href="/teacher/profile" className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shadow-sm">
-            My Profile & Roster
-          </Link>
-        </div>
+        
       </div>
 
       {subjects.length === 0 ? (
