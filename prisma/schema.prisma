@@ -248,6 +248,8 @@ model DirectThread {
   messages  Message[]
 
   @@unique([studentId, teacherId])
+  reason       String? // Student justification
+  approvedDate DateTime? // Scheduled meet time
 }
 
 model ModerationAction {
