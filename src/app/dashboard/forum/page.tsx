@@ -8,7 +8,6 @@ export default function CourseHubs() {
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
   
-  // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,9 +37,7 @@ export default function CourseHubs() {
   const sendMessage = async () => {
     if ((!messageText.trim() && !selectedFile) || !activeView) return;
     
-    let fileUrl = null;
-    let fileType = null;
-    let fileName = null;
+    let fileUrl = null, fileType = null, fileName = null;
 
     if (selectedFile) {
       const reader = new FileReader();
@@ -54,15 +51,13 @@ export default function CourseHubs() {
     }
 
     const payload = { 
-      content: messageText, 
-      fileUrl, fileName, fileType,
+      content: messageText, fileUrl, fileName, fileType,
       ...(activeView.type === 'HUB' 
-          ? { subjectId: activeView.id, hubTeacherId: activeView.teacherId } 
+          ? { subjectId: activeView.id, requestedTeacherId: activeView.teacherId } 
           : { threadId: activeView.id }) 
     };
     
-    setMessageText(""); 
-    setSelectedFile(null);
+    setMessageText(""); setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     
     const res = await fetch("/api/chat", {
@@ -84,28 +79,19 @@ export default function CourseHubs() {
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
-        {/* LEFT PANE */}
         <div className="w-72 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2">
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Group Hubs</h3>
-            </div>
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Group Hubs</h3></div>
             <div className="p-2 space-y-1">
               {courses.map((course, idx) => (
-                <button
-                  key={`${course.id}-${idx}`}
-                  onClick={() => setActiveView({ type: 'HUB', id: course.id, name: course.name, teacherId: course.teacherId, teacherName: course.teacherName })}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${activeView?.id === course.id && activeView?.teacherId === course.teacherId ? "bg-indigo-600 text-white shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
-                >
-                  <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-black ${activeView?.id === course.id && activeView?.teacherId === course.teacherId ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"}`}>#</span>
-                  {course.name} ({course.teacherName})
+                <button key={`${course.id}-${idx}`} onClick={() => setActiveView({ type: 'HUB', id: course.id, name: course.name, teacherId: course.teacherId, teacherName: course.teacherName })} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${activeView?.id === course.id && activeView?.teacherId === course.teacherId ? "bg-indigo-600 text-white shadow-md" : "text-slate-700 hover:bg-slate-100"}`}>
+                  <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-black ${activeView?.id === course.id && activeView?.teacherId === course.teacherId ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"}`}>#</span>{course.name} ({course.teacherName})
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* RIGHT PANE: ACTIVE CHAT */}
         <div className="flex-1 bg-white rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative">
           {!activeView ? (
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
@@ -113,18 +99,13 @@ export default function CourseHubs() {
             </div>
           ) : (
             <>
-              {/* Workspace Header */}
               <div className="h-[72px] flex-shrink-0 border-b border-slate-100 flex items-center justify-between px-8 bg-white z-10">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-lg">#</div>
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900">{activeView.name}</h2>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Instructed by {activeView.teacherName}</p>
-                  </div>
+                  <div><h2 className="text-lg font-black text-slate-900">{activeView.name}</h2></div>
                 </div>
               </div>
 
-              {/* Chat Feed */}
               <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 flex flex-col gap-6">
                 {messages.map((msg, idx) => (
                   <div key={idx} className="flex gap-4">
@@ -140,7 +121,7 @@ export default function CourseHubs() {
                         {msg.content}
                         {msg.fileUrl && (
                           <div className="mt-2 pt-2 border-t border-slate-100">
-                            {msg.fileType?.startsWith('image/') ? <img src={msg.fileUrl} alt="attachment" className="max-w-xs rounded-xl border border-slate-200" /> : msg.fileType?.startsWith('video/') ? <video src={msg.fileUrl} controls className="max-w-xs rounded-xl border border-slate-200" /> : <a href={msg.fileUrl} download={msg.fileName} className="flex items-center gap-2 text-blue-600 hover:underline font-bold text-xs bg-blue-50 px-3 py-2 rounded-lg border border-blue-100"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{msg.fileName || "Download Attachment"}</a>}
+                            {msg.fileType?.startsWith('image/') ? <img src={msg.fileUrl} alt="attachment" className="max-w-xs rounded-xl border border-slate-200" /> : msg.fileType?.startsWith('video/') ? <video src={msg.fileUrl} controls className="max-w-xs rounded-xl border border-slate-200" /> : <a href={msg.fileUrl} download={msg.fileName} className="flex items-center gap-2 text-blue-600 hover:underline font-bold text-xs bg-blue-50 px-3 py-2 rounded-lg border border-blue-100"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>{msg.fileName || "Download"}</a>}
                           </div>
                         )}
                       </div>
@@ -150,14 +131,11 @@ export default function CourseHubs() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Chat Input Field */}
               <div className="p-6 bg-white border-t border-slate-100 flex-shrink-0">
                 {selectedFile && (
                   <div className="mb-3 flex items-center justify-between bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl">
                     <span className="text-xs font-bold text-indigo-700 truncate">{selectedFile.name}</span>
-                    <button onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} className="text-indigo-400 hover:text-indigo-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+                    <button onClick={() => { setSelectedFile(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} className="text-indigo-400 hover:text-indigo-600"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                   </div>
                 )}
                 <div className="flex items-center gap-3 p-2 pl-4 border border-slate-200 rounded-2xl bg-[#F8FAFC] focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
