@@ -12,7 +12,6 @@ async function getAuth() {
   } catch { return null; }
 }
 
-// POST: Students request a thread, Teachers approve/schedule a thread
 export async function POST(req: Request) {
   try {
     const auth = await getAuth();
@@ -20,26 +19,21 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    // STUDENT ACTION: Request a Meet
     if (body.action === 'REQUEST_MEET') {
       const { teacherId, reason } = body;
       if (!teacherId || !reason) return NextResponse.json({ error: "Missing payload" }, { status: 400 });
 
+      // Upsert naturally resets a closed thread back into a pending request
       const thread = await prisma.directThread.upsert({
         where: { studentId_teacherId: { studentId: auth.userId, teacherId } },
-        update: { reason, isLocked: true, approvedDate: null }, // Reset if they request again
+        update: { reason, isLocked: true, approvedDate: null, isClosed: false, terminationReason: null }, 
         create: { studentId: auth.userId, teacherId, reason, isLocked: true }
       });
       return NextResponse.json({ success: true, thread });
     }
 
-    // TEACHER ACTION: Approve and Schedule a Meet
     if (body.action === 'APPROVE_MEET') {
-      if (auth.role !== 'TEACHER' && auth.role !== 'FACULTY') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      
       const { threadId, date } = body;
-      if (!threadId || !date) return NextResponse.json({ error: "Missing payload" }, { status: 400 });
-
       const updated = await prisma.directThread.update({
         where: { id: threadId, teacherId: auth.userId },
         data: { isLocked: false, approvedDate: new Date(date) }
@@ -47,15 +41,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, updated });
     }
 
-    // TEACHER ACTION: Reject a Meet
     if (body.action === 'REJECT_MEET') {
-      if (auth.role !== 'TEACHER' && auth.role !== 'FACULTY') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      
-      const { threadId } = body;
-      await prisma.directThread.delete({
-        where: { id: threadId, teacherId: auth.userId }
-      });
+      await prisma.directThread.delete({ where: { id: body.threadId, teacherId: auth.userId } });
       return NextResponse.json({ success: true });
+    }
+
+    // NEW: Terminate Meet Logic (Locks out both parties until requested again)
+    if (body.action === 'TERMINATE_MEET') {
+      const { threadId, reason } = body;
+      const whereClause = auth.role === 'TEACHER' || auth.role === 'FACULTY' 
+        ? { id: threadId, teacherId: auth.userId } 
+        : { id: threadId, studentId: auth.userId };
+
+      const updated = await prisma.directThread.update({
+        where: whereClause,
+        data: { 
+          isClosed: true, 
+          terminationReason: reason,
+          terminatedById: auth.userId,
+          recordingUrl: `https://meet.ffmuc.net/recordings/GuruCool_${threadId}.mp4`
+        }
+      });
+      return NextResponse.json({ success: true, updated });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

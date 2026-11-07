@@ -250,6 +250,10 @@ model DirectThread {
   @@unique([studentId, teacherId])
   reason       String? // Student justification
   approvedDate DateTime? // Scheduled meet time
+  terminationReason String?
+  terminatedById    String?
+  recordingUrl      String?
+  isClosed          Boolean  @default(false)
 }
 
 model ModerationAction {
