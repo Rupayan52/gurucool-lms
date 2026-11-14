@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bgParchment" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#FBF3E4"/>
+      <stop offset="60%" stop-color="#F0DEC3"/>
+      <stop offset="100%" stop-color="#DEC39D"/>
+    </radialGradient>
+    <linearGradient id="navyMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#102C54"/>
+      <stop offset="50%" stop-color="#091C38"/>
+      <stop offset="100%" stop-color="#051024"/>
+    </linearGradient>
+    <linearGradient id="goldBevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCE08B"/>
+      <stop offset="50%" stop-color="#D4A238"/>
+      <stop offset="100%" stop-color="#8F6314"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- Warm Cream Parchment Background -->
+  <rect width="1024" height="1024" rx="180" fill="url(#bgParchment)"/>
+
+  <!-- Outer Gold Ring Accent -->
+  <rect x="28" y="28" width="968" height="968" rx="160" fill="none" stroke="url(#goldBevel)" stroke-width="5" opacity="0.55"/>
+
+  <!-- Central GAT Monogram Group -->
+  <g filter="url(#dropShadow)" transform="translate(0, -18)">
+    <!-- Outer 'G' Crescent in Navy with Gold Border -->
+    <path d="M 565 210 A 215 215 0 1 0 565 555 L 565 470 L 485 470 L 485 415 L 635 415 L 635 585 A 275 275 0 1 1 615 160 Z"
+          fill="url(#navyMetal)" stroke="url(#goldBevel)" stroke-width="10"/>
+
+    <!-- Circuitry Lines Inside the 'G' -->
+    <g stroke="#F3C969" stroke-width="4" fill="none" opacity="0.85">
+      <path d="M 390 190 L 340 230 L 310 310"/>
+      <circle cx="390" cy="190" r="6" fill="#F3C969"/>
+      <circle cx="310" cy="310" r="6" fill="#F3C969"/>
+      <path d="M 360 250 L 330 350 L 350 430"/>
+      <circle cx="360" cy="250" r="6" fill="#F3C969"/>
+      <circle cx="350" cy="430" r="6" fill="#F3C969"/>
+      <path d="M 280 360 L 295 455 L 345 515"/>
+      <circle cx="280" cy="360" r="6" fill="#F3C969"/>
+    </g>
+
+    <!-- Ashoka Chakra Wheel at Center of 'G' -->
+    <circle cx="465" cy="365" r="88" fill="#FAF0DC" stroke="url(#navyMetal)" stroke-width="16"/>
+    <circle cx="465" cy="365" r="16" fill="#0B2244"/>
+    <g stroke="#0B2244" stroke-width="3.5" transform="translate(465,365)">
+      <line x1="0" y1="-80" x2="0" y2="80"/>
+      <line x1="-80" y1="0" x2="80" y2="0"/>
+      <line x1="-56" y1="-56" x2="56" y2="56"/>
+      <line x1="-56" y1="56" x2="56" y2="-56"/>
+      <line x1="-29" y1="-74" x2="29" y2="74"/>
+      <line x1="-74" y1="-29" x2="74" y2="29"/>
+      <line x1="-74" y1="29" x2="74" y2="-29"/>
+      <line x1="-29" y1="74" x2="29" y2="-74"/>
+    </g>
+
+    <!-- Stylized 'A' and 'T' Monogram -->
+    <path d="M 425 565 L 545 355 L 650 565 L 590 565 L 545 468 L 485 565 Z"
+          fill="url(#navyMetal)" stroke="url(#goldBevel)" stroke-width="8"/>
+    <circle cx="545" cy="525" r="16" fill="#0B2244"/>
+    <path d="M 555 340 L 755 340 L 730 392 L 678 392 L 678 565 L 622 565 L 622 392 L 555 392 Z"
+          fill="url(#navyMetal)" stroke="url(#goldBevel)" stroke-width="8"/>
+
+    <!-- Dynamic Indian Tricolor Swoosh Slicing Upward -->
+    <path d="M 245 555 Q 510 355 815 135 Q 535 375 265 568 Z" fill="#FF671F"/>
+    <path d="M 260 566 Q 525 368 825 148 Q 545 388 278 578 Z" fill="#FFFFFF"/>
+    <path d="M 275 576 Q 540 380 835 162 Q 560 402 295 588 Z" fill="#046A38"/>
+
+    <!-- Flying Birds at Tip of Tricolor Swoosh -->
+    <path d="M 815 100 Q 832 82 848 96 Q 865 80 878 98 Q 852 106 848 118 Q 832 106 815 100 Z" fill="#FF671F"/>
+    <path d="M 845 142 Q 860 128 872 138 Q 886 126 896 140 Q 875 148 872 156 Q 858 148 845 142 Z" fill="#046A38"/>
+    <path d="M 805 172 Q 818 160 828 168 Q 840 158 848 170 Q 832 176 828 184 Q 816 176 805 172 Z" fill="#046A38"/>
+  </g>
+
+  <!-- Typography: House of GnOvATech -->
+  <line x1="175" y1="608" x2="335" y2="608" stroke="#9A6B26" stroke-width="3.5"/>
+  <text x="512" y="622" text-anchor="middle" font-family="Georgia, serif" font-size="56" font-weight="bold" fill="#4A2E0B">
+    House of
+  </text>
+  <line x1="689" y1="608" x2="849" y2="608" stroke="#9A6B26" stroke-width="3.5"/>
+
+  <text x="512" y="728" text-anchor="middle" font-family="Georgia, serif" font-size="112" font-weight="900" fill="#091E3A" letter-spacing="1">
+    Gn<tspan fill="url(#goldBevel)">O</tspan>vATech
+  </text>
+
+  <text x="512" y="792" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#2C3A4E" letter-spacing="8">
+    AI  •  INNOVATE  •  ELEVATE
+  </text>
+
+  <!-- Tricolor Divider & Mini Chakra -->
+  <line x1="295" y1="832" x2="472" y2="832" stroke="#FF671F" stroke-width="5"/>
+  <circle cx="512" cy="832" r="22" fill="#FAF0DC" stroke="#091E3A" stroke-width="4"/>
+  <circle cx="512" cy="832" r="6" fill="#091E3A"/>
+  <line x1="552" y1="832" x2="729" y2="832" stroke="#046A38" stroke-width="5"/>
+
+  <text x="512" y="886" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#475569" letter-spacing="5.5">
+    MADE IN INDIA  •  FOR A BETTER TOMORROW
+  </text>
+
+  <!-- Bottom Tricolor Ribbon Wave -->
+  <path d="M 60 935 Q 180 990 310 955" fill="none" stroke="#FF671F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M 60 950 Q 180 1005 310 970" fill="none" stroke="#046A38" stroke-width="7" stroke-linecap="round"/>
+  <path d="M 964 935 Q 844 990 714 955" fill="none" stroke="#FF671F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M 964 950 Q 844 1005 714 970" fill="none" stroke="#046A38" stroke-width="7" stroke-linecap="round"/>
+</svg>

@@ -1,10 +1,18 @@
 {
-  "name": "GuruCool Phygital LMS",
-  "short_name": "GuruCool",
-  "description": "AI-Powered Learning Management System with BKT Telemetry, Live FFMUC Broadcasts, and Faculty Command Center",
+  "name": "GAT • House of GnOvATech LMS",
+  "short_name": "GnOvATech",
+  "description": "House of GnOvATech — AI • Innovate • Elevate | Phygital LMS",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B0F19",
-  "theme_color": "#4F46E5",
-  "orientation": "portrait-primary"
+  "theme_color": "#091E3A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/gnovatech-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
