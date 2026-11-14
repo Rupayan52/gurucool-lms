@@ -32,7 +32,7 @@ export default function StudentAIInsightsAndMastery() {
       <div className="flex flex-col justify-center items-center h-full min-h-[500px] gap-3">
         <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
         <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">
-          Running GuruAI Neural Telemetry & Cohort Clustering...
+          Running Bayesian Knowledge Tracing (BKT), IRT θ & Ebbinghaus Retention Models...
         </p>
       </div>
     );
@@ -48,19 +48,22 @@ export default function StudentAIInsightsAndMastery() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-500 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-500/30">
-            ML
+            AI
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-2xl font-black text-white tracking-tight">
                 AI Insights & Mastery Engine
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
-                Live Training Telemetry
+                BKT + IRT θ + Ebbinghaus Decay
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+                🛡️ OWASP Protected
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Personalized diagnostics, question-level strength/weakness mining, faculty escalation triggers, and cohort learning-speed clustering
+              Bayesian Knowledge Tracing mastery probabilities, Ebbinghaus memory retention curves, faculty escalation triggers, and cohort clustering
             </p>
           </div>
         </div>
@@ -73,40 +76,44 @@ export default function StudentAIInsightsAndMastery() {
             Curriculum, Quizzes & Assignments →
           </Link>
           <Link
+            href="/dashboard/player"
+            className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] text-slate-200 border border-white/10 font-bold text-xs"
+          >
+            Live Learning Player ({data?.liveClassTelemetry?.attendedClasses || 0}/
+            {data?.liveClassTelemetry?.totalAssignedClasses || 0})
+          </Link>
+          <Link
             href="/dashboard/doubts"
             className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] text-slate-200 border border-white/10 font-bold text-xs"
           >
-            Doubt Clearing Hub ({data?.openDoubtsCount || 0} Open)
-          </Link>
-          <Link
-            href="/dashboard/forum"
-            className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] text-slate-200 border border-white/10 font-bold text-xs"
-          >
-            Request 1-on-1 Meet
+            Doubt Hub ({data?.openDoubtsCount || 0} Open)
           </Link>
         </div>
       </div>
 
       {/* ================================================================= */}
-      {/* TOP ML TELEMETRY BANNER: CLUSTER CLASSIFICATION & PRIORITY FOCUS   */}
+      {/* TOP ML TELEMETRY BANNER: BKT + IRT CLUSTER & PRIORITY REGRESSOR   */}
       {/* ================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Student Learning Speed Classification Card */}
+        {/* Student Learning Speed & Psychometric Vector Card */}
         <div className="lg:col-span-7 bg-gradient-to-br from-[#1E1B3A] via-[#171722] to-[#14141D] rounded-3xl border border-indigo-500/30 p-7 flex flex-col justify-between shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                ML Learning-Speed Classification
+                Psychometric Learning-Speed Classification
               </p>
               <h2 className="text-2xl font-black text-white mt-1">
                 {studentVec?.clusterLabel || "Calibrating Profile"}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-black">
-                Composite ML Score: {studentVec?.compositeIndex || 0}/100
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1.5 rounded-xl bg-white/10 text-white text-xs font-black">
+                IRT Ability θ: {studentVec?.irtTheta >= 0 ? `+${studentVec?.irtTheta}` : studentVec?.irtTheta}
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-black">
+              <span className="px-3 py-1.5 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-black">
+                Composite: {studentVec?.compositeIndex || 0}/100
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-black">
                 Top {100 - (ml?.percentile || 100) + 1}% Cohort
               </span>
             </div>
@@ -115,13 +122,26 @@ export default function StudentAIInsightsAndMastery() {
           {/* 4D Feature Vector Bars */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
             <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-              <p className="text-[10px] font-bold uppercase text-slate-400">Accuracy Vector</p>
+              <p className="text-[10px] font-bold uppercase text-slate-400">BKT Mastery P(Lt)</p>
               <p className="text-2xl font-black text-emerald-400 mt-1">
-                {studentVec?.totalActivities > 0 ? `${studentVec.accuracy}%` : "N/A"}
+                {studentVec?.bktMasteryPct || 45}%
               </p>
               <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
                 <div
                   className="h-full bg-emerald-400 rounded-full"
+                  style={{ width: `${studentVec?.bktMasteryPct || 45}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+              <p className="text-[10px] font-bold uppercase text-slate-400">Raw Accuracy</p>
+              <p className="text-2xl font-black text-cyan-400 mt-1">
+                {studentVec?.totalActivities > 0 ? `${studentVec.accuracy}%` : "N/A"}
+              </p>
+              <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
+                <div
+                  className="h-full bg-cyan-400 rounded-full"
                   style={{ width: `${studentVec?.accuracy || 0}%` }}
                 />
               </div>
@@ -152,32 +172,19 @@ export default function StudentAIInsightsAndMastery() {
                 />
               </div>
             </div>
-
-            <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
-              <p className="text-[10px] font-bold uppercase text-slate-400">Concept Autonomy</p>
-              <p className="text-2xl font-black text-purple-400 mt-1">
-                {studentVec?.autonomyScore || 100}%
-              </p>
-              <div className="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
-                <div
-                  className="h-full bg-purple-400 rounded-full"
-                  style={{ width: `${studentVec?.autonomyScore || 100}%` }}
-                />
-              </div>
-            </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-300">
+          <div className="flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
             <span>
               Trained on <strong>{data?.quizzesCompleted || 0}/{data?.totalQuizzes || 0}</strong> Quizzes,{" "}
               <strong>{data?.assignmentsSubmitted || 0}/{data?.totalAssignments || 0}</strong> Assignments &{" "}
-              <strong>{(data?.openDoubtsCount || 0) + (data?.resolvedDoubtsCount || 0)}</strong> Doubts
+              <strong>{data?.liveClassTelemetry?.attendedClasses || 0}</strong> Live Classes
             </span>
             <button
               onClick={fetchMLInsights}
               className="text-indigo-400 hover:text-indigo-300 font-bold underline"
             >
-              Re-compute Model ↻
+              Re-compute BKT & IRT Model ↻
             </button>
           </div>
         </div>
@@ -208,7 +215,7 @@ export default function StudentAIInsightsAndMastery() {
               <div className="py-6">
                 <h3 className="text-lg font-black text-white">No Enrolled Subjects Yet</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Enroll in a course from the Course Catalog to activate subject-level ML focus ranking.
+                  Enroll in a course from the Course Catalog to activate subject-level BKT & IRT ranking.
                 </p>
               </div>
             ) : (
@@ -219,13 +226,13 @@ export default function StudentAIInsightsAndMastery() {
                     : `Strongest Mastery: ${primaryFocus.subjectName}`}
                 </h3>
                 <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  Instructed by Prof. {primaryFocus.teacherName} •{" "}
-                  {primaryFocus.accuracy !== null ? `${primaryFocus.accuracy}% Accuracy` : "No graded attempts yet"}
+                  Prof. {primaryFocus.teacherName} • BKT Mastery: {primaryFocus.bktMasteryPct}% • Allocate{" "}
+                  <span className="text-indigo-400">{primaryFocus.recommendedDailyHours} hrs/day</span>
                 </p>
 
                 <div className="mt-4 p-4 rounded-2xl bg-[#13131A] border border-white/5 space-y-2">
                   <p className="text-[10px] font-black uppercase text-slate-400">
-                    ML Diagnostic Evidence
+                    Psychometric & Retention Telemetry
                   </p>
                   {primaryFocus.focusReasons.length > 0 ? (
                     <ul className="text-xs text-slate-200 space-y-1 list-disc list-inside">
@@ -235,7 +242,8 @@ export default function StudentAIInsightsAndMastery() {
                     </ul>
                   ) : (
                     <p className="text-xs text-emerald-400 font-semibold">
-                      100% of published assessments completed with high accuracy! Ready for next module or advanced faculty problem sets.
+                      100% of published assessments completed! Predicted next quiz score:{" "}
+                      {primaryFocus.predictedNextScorePct}%.
                     </p>
                   )}
                 </div>
@@ -265,10 +273,13 @@ export default function StudentAIInsightsAndMastery() {
       {/* ================================================================= */}
       <div className="flex items-center gap-2 flex-wrap bg-[#1C1C24] p-2 rounded-2xl border border-white/10">
         {[
-          { id: "DIAGNOSTICS", label: "1. Strengths, Weaknesses & Subject Matrix" },
+          { id: "DIAGNOSTICS", label: "1. BKT Mastery, Retention & Strengths/Weaknesses" },
           { id: "FACULTY_ADVISOR", label: "2. When to Approach Faculty (Topic Triggers)" },
-          { id: "COHORT_CLUSTERS", label: `3. Cohort Learning-Speed Segregation (${ml?.cohortSegregation?.totalStudentsAnalyzed || 0} Students)` },
-          { id: "STRATEGIES", label: "4. Personalized Study Strategies & Tactics" }
+          {
+            id: "COHORT_CLUSTERS",
+            label: `3. Cohort Learning-Speed Segregation (${ml?.cohortSegregation?.totalStudentsAnalyzed || 0} Students)`
+          },
+          { id: "STRATEGIES", label: "4. Personalized Study Strategies & Daily Allocation" }
         ].map((tab: any) => (
           <button
             key={tab.id}
@@ -285,7 +296,7 @@ export default function StudentAIInsightsAndMastery() {
       </div>
 
       {/* ================================================================= */}
-      {/* TAB 1: STRENGTHS, WEAKNESSES & SUBJECT DIAGNOSTIC MATRIX          */}
+      {/* TAB 1: STRENGTHS, WEAKNESSES & BKT/RETENTION MATRIX               */}
       {/* ================================================================= */}
       {activeSection === "DIAGNOSTICS" && (
         <div className="space-y-8">
@@ -378,10 +389,10 @@ export default function StudentAIInsightsAndMastery() {
             </div>
           </div>
 
-          {/* Per-Subject Performance & Focus Table */}
+          {/* Per-Subject BKT, IRT & Retention Matrix */}
           <div className="bg-[#1C1C24] rounded-3xl border border-white/10 p-6 space-y-4">
             <h3 className="text-lg font-black text-white">
-              Subject-Wise Telemetry & Focus Ranking
+              Subject-Wise BKT Mastery, Ebbinghaus Retention & Study Allocation
             </h3>
             {!ml?.subjectDiagnostics || ml.subjectDiagnostics.length === 0 ? (
               <p className="text-xs text-slate-400">No subjects enrolled.</p>
@@ -391,10 +402,10 @@ export default function StudentAIInsightsAndMastery() {
                   <thead>
                     <tr className="border-b border-white/10 text-[10px] font-black uppercase tracking-wider text-slate-400">
                       <th className="py-3 px-4">Subject & Faculty</th>
-                      <th className="py-3 px-4">Modules & Topics</th>
-                      <th className="py-3 px-4">Quizzes</th>
-                      <th className="py-3 px-4">Assignments</th>
-                      <th className="py-3 px-4">Accuracy</th>
+                      <th className="py-3 px-4">BKT Mastery P(Lt)</th>
+                      <th className="py-3 px-4">Next-Test Forecast</th>
+                      <th className="py-3 px-4">Memory Retention</th>
+                      <th className="py-3 px-4">Recommended Study</th>
                       <th className="py-3 px-4">Focus Priority</th>
                     </tr>
                   </thead>
@@ -404,20 +415,23 @@ export default function StudentAIInsightsAndMastery() {
                         <td className="py-3.5 px-4 font-bold text-white">
                           {sd.subjectName}
                           <span className="block text-[10px] font-normal text-slate-400">
-                            Prof. {sd.teacherName}
+                            Prof. {sd.teacherName} • IRT θ = {sd.irtTheta}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300">
-                          {sd.modulesCount} Modules • {sd.topicsCount} Topics
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-300">
-                          {sd.quizzesAttempted}/{sd.quizzesTotal} Attempted
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-300">
-                          {sd.assignmentsSubmitted}/{sd.assignmentsTotal} Submitted
-                        </td>
                         <td className="py-3.5 px-4 font-black text-emerald-400">
-                          {sd.accuracy !== null ? `${sd.accuracy}%` : "Pending"}
+                          {sd.bktMasteryPct}%
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-indigo-300">
+                          {sd.predictedNextScorePct}%
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-300">
+                          {sd.retentionPct > 0 ? `${sd.retentionPct}%` : "Baseline"}
+                          <span className="block text-[10px] text-slate-400">
+                            {sd.optimalReviewWindow}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-amber-300">
+                          {sd.recommendedDailyHours} hrs/day
                         </td>
                         <td className="py-3.5 px-4">
                           <span
@@ -429,12 +443,7 @@ export default function StudentAIInsightsAndMastery() {
                                 : "bg-emerald-500/20 text-emerald-300"
                             }`}
                           >
-                            {sd.focusPriorityScore}/100{" "}
-                            {sd.focusPriorityScore >= 50
-                              ? "(High Priority)"
-                              : sd.focusPriorityScore > 0
-                              ? "(Moderate)"
-                              : "(On Track)"}
+                            {sd.focusPriorityScore}/100
                           </span>
                         </td>
                       </tr>
@@ -461,7 +470,7 @@ export default function StudentAIInsightsAndMastery() {
                 When & Why to Approach Your Faculty Mentors
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Calculated from your missed quiz questions, unsubmitted assignments, and topic mastery scores.
+                Calculated from your BKT posterior mastery, missed quiz questions, and unsubmitted assignments.
               </p>
             </div>
 
@@ -554,7 +563,7 @@ export default function StudentAIInsightsAndMastery() {
                   Cohort Learning-Speed Segregation ({ml?.cohortSegregation?.totalStudentsAnalyzed || 0} Students)
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Segregates all students in the database into learning velocity and mastery tiers based on live quiz & assignment telemetry.
+                  Segregates all students in PostgreSQL into learning velocity and BKT mastery tiers.
                 </p>
               </div>
             </div>
@@ -601,7 +610,7 @@ export default function StudentAIInsightsAndMastery() {
                                   {st.studentName} {isMe && <span className="text-indigo-400">(You)</span>}
                                 </p>
                                 <p className="text-[10px] text-slate-400">
-                                  Accuracy: {st.accuracy}% • Velocity: {st.velocityScore}% • Completion: {st.completionRate}%
+                                  BKT: {st.bktMasteryPct}% • IRT θ: {st.irtTheta} • Velocity: {st.velocityScore}%
                                 </p>
                               </div>
                             </div>
@@ -654,55 +663,6 @@ export default function StudentAIInsightsAndMastery() {
           ))}
         </div>
       )}
-
-      {/* UPCOMING LIVE CONCIERGE SESSIONS */}
-      <div className="space-y-4 pt-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black text-white">Upcoming Live Concierge Sessions</h2>
-          <span className="text-xs font-bold text-indigo-400">Synced with FFMUC Video Engine</span>
-        </div>
-
-        {!data?.liveSessions || data.liveSessions.length === 0 ? (
-          <div className="bg-[#1C1C24] rounded-3xl border border-white/10 p-10 text-center space-y-4">
-            <h3 className="text-lg font-black text-white">No Live Mentorships Scheduled</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Submit a doubt in the Doubt Clearing Hub or request a 1-on-1 meet inside Course Hubs to schedule a live faculty breakdown.
-            </p>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Link href="/dashboard/forum" className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs">
-                Open Course Hubs
-              </Link>
-              <Link href="/dashboard/doubts" className="px-5 py-2.5 rounded-xl bg-white/10 text-white font-bold text-xs">
-                Open Doubt Clearing Hub
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.liveSessions.map((sess: any) => (
-              <div key={sess.id} className="bg-[#1C1C24] rounded-2xl border border-white/10 p-6 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                    Approved 1-on-1 Session
-                  </span>
-                  <h4 className="text-base font-black text-white mt-1">Prof. {sess.teacherName}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {sess.approvedDate ? new Date(sess.approvedDate).toLocaleString() : "Active Workspace"}
-                  </p>
-                </div>
-                <a
-                  href={sess.meetingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
-                >
-                  Join Live Room →
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

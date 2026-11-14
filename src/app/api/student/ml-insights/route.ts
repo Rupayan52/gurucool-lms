@@ -1,35 +1,36 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import {
   classifyPeerVector,
   CohortPeerVector,
+  computeBayesianKnowledgeTrace,
+  estimateIRTAbilityTheta,
   runPersonalMLPipeline,
   StudentRawTelemetry
 } from "@/lib/ml-engine";
+import { enforceRateLimit, getClientIp, verifySecureSession } from "@/lib/security";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token =
-      cookieStore.get("token_student")?.value ||
-      cookieStore.get("auth_token")?.value ||
-      cookieStore.get("token_teacher")?.value;
-
-    if (!token) {
+    const auth = await verifySecureSession();
+    if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "fallback_secret"
-    ) as { userId: string; role: string };
-    const studentId = decoded.userId;
+    const ip = await getClientIp();
+    const rate = enforceRateLimit(`${auth.userId}:${ip}`, "ml-insights", 45, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait before refreshing." },
+        { status: 429 }
+      );
+    }
 
-    // 1. Fetch all students, subjects, quizzes, assignments, attempts, submissions, doubts, and threads
+    const studentId = auth.userId;
+
     const [
       currentUser,
+      studentProfile,
       allStudents,
       allRegistrations,
       allModules,
@@ -38,11 +39,16 @@ export async function GET() {
       allAssignments,
       allSubmissions,
       allDoubts,
+      allLiveSessions,
+      allLiveAttendances,
       activeThreads
     ] = await Promise.all([
       prisma.user.findUnique({
         where: { id: studentId },
         select: { id: true, name: true, email: true }
+      }),
+      prisma.studentProfile.findUnique({
+        where: { userId: studentId }
       }),
       prisma.user.findMany({
         where: { role: "STUDENT" },
@@ -73,6 +79,8 @@ export async function GET() {
       prisma.academicDoubt.findMany({
         orderBy: { createdAt: "desc" }
       }),
+      prisma.liveClassSession.findMany(),
+      prisma.liveClassAttendance.findMany(),
       prisma.directThread.findMany({
         where: { studentId, isLocked: false, isClosed: false },
         include: { teacher: { select: { id: true, name: true, avatarUrl: true } } }
@@ -83,28 +91,46 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Ensure current user is included in peer pool if they are logged in as student
     const studentPool = allStudents.some(s => s.id === currentUser.id)
       ? allStudents
       : [...allStudents, { id: currentUser.id, name: currentUser.name, createdAt: new Date() }];
 
-    // 2. Build Cohort-Wide Feature Vectors for All Students (Real ML Clustering)
+    // Build Cohort-Wide Feature Vectors with BKT & IRT for Every Student
     const cohortVectors: CohortPeerVector[] = studentPool.map(st => {
       const stRegs = allRegistrations.filter(r => r.studentId === st.id);
       const stSubjectIds = stRegs.map(r => r.subjectId);
 
       const relevantQuizzes = allQuizzes.filter(q => stSubjectIds.includes(q.subjectId));
       const relevantAssignments = allAssignments.filter(a => stSubjectIds.includes(a.subjectId));
+      const relevantLiveClasses = allLiveSessions.filter(l => stSubjectIds.includes(l.subjectId));
 
       const stAttempts = allQuizAttempts.filter(a => a.studentId === st.id);
       const stSubs = allSubmissions.filter(s => s.studentId === st.id);
       const stDoubts = allDoubts.filter(d => d.studentId === st.id);
+      const stAttendances = allLiveAttendances.filter(l => l.studentId === st.id);
 
       let earned = 0;
       let max = 0;
+      const bktObs: number[] = [];
+      const irtObs: Array<{ correct: number; weight: number }> = [];
+
       stAttempts.forEach(att => {
         earned += att.score;
         max += att.maxScore;
+        const parentQuiz = allQuizzes.find(q => q.id === att.quizId);
+        if (parentQuiz) {
+          let parsed: number[] = [];
+          try {
+            parsed = JSON.parse(att.answers || "[]");
+          } catch {
+            parsed = [];
+          }
+          parentQuiz.questions.forEach((ques, idx) => {
+            const c = Number(parsed[idx]) === ques.correctIndex ? 1 : 0;
+            bktObs.push(c);
+            irtObs.push({ correct: c, weight: Math.max(1, ques.points) });
+          });
+        }
       });
 
       stSubs.forEach(sub => {
@@ -113,14 +139,18 @@ export async function GET() {
           if (parentAssign) {
             earned += sub.awardedMarks;
             max += parentAssign.maxMarks;
+            const c = sub.awardedMarks / Math.max(1, parentAssign.maxMarks) >= 0.7 ? 1 : 0;
+            bktObs.push(c);
+            irtObs.push({ correct: c, weight: 2 });
           }
         }
       });
 
-      const totalActivities = stAttempts.length + stSubs.length;
+      const totalActivities = stAttempts.length + stSubs.length + stAttendances.length;
       const accuracy = max > 0 ? Math.round((earned / max) * 100) : 0;
 
-      const totalAssigned = relevantQuizzes.length + relevantAssignments.length;
+      const totalAssigned =
+        relevantQuizzes.length + relevantAssignments.length + relevantLiveClasses.length;
       const completionRate =
         totalAssigned > 0
           ? Math.min(100, Math.round((totalActivities / totalAssigned) * 100))
@@ -128,7 +158,6 @@ export async function GET() {
           ? 100
           : 0;
 
-      // Velocity score computed from response latency between quiz/assignment creation and student submission
       const speedScores: number[] = [];
       stAttempts.forEach(att => {
         const q = allQuizzes.find(x => x.id === att.quizId);
@@ -137,7 +166,6 @@ export async function GET() {
             0.1,
             (new Date(att.submittedAt).getTime() - new Date(q.createdAt).getTime()) / (1000 * 3600)
           );
-          // Faster completion after publication yields higher velocity (100 for <6h, decaying smoothly)
           const v = Math.max(35, Math.min(100, Math.round(100 - Math.log10(hoursElapsed + 1) * 28)));
           speedScores.push(v);
         }
@@ -158,17 +186,23 @@ export async function GET() {
       const velocityScore =
         speedScores.length > 0
           ? Math.round(speedScores.reduce((a, b) => a + b, 0) / speedScores.length)
+          : stAttendances.length > 0
+          ? 75
           : 0;
 
       const openDoubtsCount = stDoubts.filter(d => d.status === "OPEN").length;
       const autonomyScore = Math.max(40, 100 - openDoubtsCount * 15);
+
+      const bktTrace = computeBayesianKnowledgeTrace(bktObs);
+      const irtTheta = estimateIRTAbilityTheta(irtObs);
 
       const classification = classifyPeerVector(
         accuracy,
         completionRate,
         velocityScore,
         autonomyScore,
-        totalActivities
+        stAttempts.length + stSubs.length,
+        bktTrace.posteriorMastery
       );
 
       return {
@@ -178,14 +212,15 @@ export async function GET() {
         completionRate,
         velocityScore,
         autonomyScore,
+        bktMasteryPct: bktTrace.posteriorMastery,
+        irtTheta,
         compositeIndex: classification.compositeIndex,
-        totalActivities,
+        totalActivities: stAttempts.length + stSubs.length,
         clusterId: classification.clusterId,
         clusterLabel: classification.clusterLabel
       };
     });
 
-    // 3. Build Target Student Raw Telemetry
     const myRegs = allRegistrations.filter(r => r.studentId === studentId);
     const enrolledSubjects = myRegs.map(r => ({
       subjectId: r.subject.id,
@@ -281,9 +316,29 @@ export async function GET() {
         resolvedAt: d.resolvedAt
       }));
 
+    // Live Class Telemetry for this student
+    const myCourseLiveSessions = allLiveSessions.filter(s =>
+      mySubjectIds.includes(s.subjectId)
+    );
+    const myAttendances = allLiveAttendances.filter(a => a.studentId === studentId);
+    const attendedSet = new Set(myAttendances.map(a => a.sessionId));
+    const mandatorySessions = myCourseLiveSessions.filter(s => s.isMandatory);
+
     const telemetry: StudentRawTelemetry = {
       studentId: currentUser.id,
       studentName: currentUser.name,
+      studyProfile: {
+        dailyStudyGoalHrs: studentProfile?.dailyStudyGoalHrs || 4,
+        learningStyle: studentProfile?.learningStyle || "Visual & Derivation-First",
+        targetExam: studentProfile?.targetExam || null,
+        institution: studentProfile?.institution || null
+      },
+      liveClassTelemetry: {
+        totalAssignedClasses: myCourseLiveSessions.length,
+        attendedClasses: myCourseLiveSessions.filter(s => attendedSet.has(s.id)).length,
+        mandatoryAssigned: mandatorySessions.length,
+        mandatoryAttended: mandatorySessions.filter(s => attendedSet.has(s.id)).length
+      },
       enrolledSubjects,
       subjectMaterials,
       quizzes: myQuizzes,
@@ -304,6 +359,7 @@ export async function GET() {
       assignmentsSubmitted: myAssignments.filter(a => a.submission !== null).length,
       openDoubtsCount: myDoubts.filter(d => d.status === "OPEN").length,
       resolvedDoubtsCount: myDoubts.filter(d => d.status === "RESOLVED").length,
+      liveClassTelemetry: telemetry.liveClassTelemetry,
       liveSessions: activeThreads.map(t => ({
         id: t.id,
         teacherName: t.teacher.name,
@@ -314,6 +370,6 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error("ML Insights Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to compute ML insights" }, { status: 500 });
   }
 }

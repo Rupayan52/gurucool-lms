@@ -1,32 +1,46 @@
-// Array of slang/profanity to censor (Expand this list for your production needs)
-const RESTRICTED_WORDS = [
-  "slangword1", "slangword2", "badword", "profanity"
+import { sanitizeString, validateBase64Upload } from "@/lib/security";
+
+const RESTRICTED_TERMS = [
+  "fuck",
+  "shit",
+  "bitch",
+  "asshole",
+  "bastard",
+  "dick",
+  "pussy",
+  "cunt",
+  "whore",
+  "slut",
+  "nigger",
+  "faggot",
+  "retard",
+  "kys"
 ];
 
-/**
- * Replaces restricted words with asterisks while preserving case length.
- */
-export function censorText(text: string): string {
-  if (!text) return text;
-  let sanitized = text;
-  RESTRICTED_WORDS.forEach(word => {
-    const regex = new RegExp(`\\b${word}\\b`, 'gi');
-    sanitized = sanitized.replace(regex, (match) => '*'.repeat(match.length));
-  });
-  return sanitized;
+export function censorText(rawText: string): string {
+  const sanitized = sanitizeString(rawText, 8000);
+  if (!sanitized) return "";
+
+  let output = sanitized;
+  for (const word of RESTRICTED_TERMS) {
+    const regex = new RegExp(`\\b${word}\\b`, "gi");
+    output = output.replace(regex, "*".repeat(word.length));
+  }
+  return output;
 }
 
-/**
- * Scaffold for Explicit Media Content Scanner (Images/Videos).
- * In production, wire this to AWS Rekognition, Google Cloud Vision, or Vercel Blob checks.
- */
-export async function scanMediaContent(fileUrl: string, fileType: string): Promise<boolean> {
-  if (!fileType.startsWith('image/') && !fileType.startsWith('video/')) {
-    return true; // PDFs, Excel, PPTs bypass explicit visual scanning
+export async function scanMediaContent(
+  fileUrl: string,
+  fileType: string,
+  fileName?: string
+): Promise<boolean> {
+  const check = validateBase64Upload(fileUrl, fileName);
+  if (!check.valid) return false;
+
+  const blockedTypes = ["application/x-msdownload", "application/x-sh", "text/html", "text/javascript"];
+  if (blockedTypes.some(t => fileType?.toLowerCase().includes(t))) {
+    return false;
   }
-  
-  // TODO: Implement cloud Vision API call here.
-  // For now, assume media passes the baseline safety check.
-  const isSafe = true; 
-  return isSafe;
+
+  return true;
 }

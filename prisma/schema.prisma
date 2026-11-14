@@ -445,3 +445,14 @@ model LiveClassAttendance {
 
   @@unique([sessionId, studentId])
 }
+
+model SecurityAuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  role      String?
+  action    String
+  resource  String?
+  severity  String   @default("INFO") // INFO, WARN, CRITICAL
+  metadata  String?
+  createdAt DateTime @default(now())
+}

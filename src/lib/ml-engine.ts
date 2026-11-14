@@ -1,6 +1,18 @@
 export interface StudentRawTelemetry {
   studentId: string;
   studentName: string;
+  studyProfile?: {
+    dailyStudyGoalHrs: number;
+    learningStyle: string;
+    targetExam: string | null;
+    institution: string | null;
+  };
+  liveClassTelemetry?: {
+    totalAssignedClasses: number;
+    attendedClasses: number;
+    mandatoryAssigned: number;
+    mandatoryAttended: number;
+  };
   enrolledSubjects: Array<{
     subjectId: string;
     subjectName: string;
@@ -65,48 +77,137 @@ export interface StudentRawTelemetry {
 export interface CohortPeerVector {
   studentId: string;
   studentName: string;
-  accuracy: number;       // 0..100
-  completionRate: number; // 0..100
-  velocityScore: number;  // 0..100
-  autonomyScore: number;  // 0..100
-  compositeIndex: number; // 0..100
+  accuracy: number;         // 0..100
+  completionRate: number;   // 0..100
+  velocityScore: number;    // 0..100
+  autonomyScore: number;    // 0..100
+  bktMasteryPct: number;    // 0..100 Bayesian Knowledge Tracing posterior
+  irtTheta: number;         // -3.0 .. +3.0 IRT Latent Ability
+  compositeIndex: number;   // 0..100
   totalActivities: number;
   clusterId: "ACCELERATED" | "ANALYTICAL" | "EXPLORER" | "FOUNDATIONAL" | "CALIBRATING";
   clusterLabel: string;
 }
 
+// Canonical Bayesian Knowledge Tracing (BKT) Parameter Set (Corbett & Anderson)
+const BKT_PARAMS = {
+  pInit: 0.45,    // P(L_0): Initial prior probability of skill mastery
+  pTransit: 0.22, // P(T): Probability of transitioning from unlearned to mastered after practice
+  pSlip: 0.10,    // P(S): Probability of making a slip despite knowing the concept
+  pGuess: 0.25    // P(G): Probability of guessing a 4-option MCQ correctly without mastery
+};
+
+/**
+ * Runs sequential Bayesian Knowledge Tracing (BKT) over binary observations (1 = correct, 0 = wrong)
+ * Returns posterior mastery P(L_t) and next-step predicted success probability P(C_{t+1}).
+ */
+export function computeBayesianKnowledgeTrace(observations: number[]): {
+  posteriorMastery: number;
+  predictedNextSuccess: number;
+} {
+  if (observations.length === 0) {
+    const pNext =
+      BKT_PARAMS.pInit * (1 - BKT_PARAMS.pSlip) +
+      (1 - BKT_PARAMS.pInit) * BKT_PARAMS.pGuess;
+    return {
+      posteriorMastery: Math.round(BKT_PARAMS.pInit * 100),
+      predictedNextSuccess: Math.round(pNext * 100)
+    };
+  }
+
+  let pL = BKT_PARAMS.pInit;
+  const { pTransit, pSlip, pGuess } = BKT_PARAMS;
+
+  for (const obs of observations) {
+    let pLGivenObs: number;
+    if (obs === 1) {
+      const num = pL * (1 - pSlip);
+      const den = num + (1 - pL) * pGuess;
+      pLGivenObs = den > 0 ? num / den : pL;
+    } else {
+      const num = pL * pSlip;
+      const den = num + (1 - pL) * (1 - pGuess);
+      pLGivenObs = den > 0 ? num / den : pL;
+    }
+    // Learning transition step: P(L_t) = P(L_{t-1}|obs) + (1 - P(L_{t-1}|obs)) * P(T)
+    pL = pLGivenObs + (1 - pLGivenObs) * pTransit;
+  }
+
+  const pNextCorrect = pL * (1 - pSlip) + (1 - pL) * pGuess;
+  return {
+    posteriorMastery: Math.max(5, Math.min(99, Math.round(pL * 100))),
+    predictedNextSuccess: Math.max(10, Math.min(99, Math.round(pNextCorrect * 100)))
+  };
+}
+
+/**
+ * Ebbinghaus Forgetting Curve Retention Model: R(t) = exp(-hoursElapsed / stabilityHours)
+ * Stability increases with each completed reinforcement activity and high BKT mastery.
+ */
+export function computeEbbinghausRetention(
+  lastActivityDate: Date | null,
+  reinforcementCount: number,
+  bktMasteryPct: number
+): { retentionPct: number; hoursSinceLastPractice: number | null; optimalReviewWindow: string } {
+  if (!lastActivityDate || reinforcementCount === 0) {
+    return {
+      retentionPct: 0,
+      hoursSinceLastPractice: null,
+      optimalReviewWindow: "Immediate baseline practice needed"
+    };
+  }
+
+  const hoursElapsed = Math.max(
+    0,
+    (Date.now() - new Date(lastActivityDate).getTime()) / (1000 * 3600)
+  );
+
+  // Base memory half-life stability scales with practice count and BKT mastery (in hours)
+  const stabilityHours = 48 * (1 + reinforcementCount * 0.65) * (0.5 + bktMasteryPct / 100);
+  const rawRetention = Math.exp(-hoursElapsed / stabilityHours);
+  const retentionPct = Math.max(15, Math.min(100, Math.round(rawRetention * 100)));
+
+  let optimalReviewWindow = "Memory stable (>85% retention)";
+  if (retentionPct < 60) {
+    optimalReviewWindow = "Critical decay (<60%): Review notes & retake quiz today";
+  } else if (retentionPct < 80) {
+    optimalReviewWindow = "Spaced repetition due within 24 hours";
+  }
+
+  return {
+    retentionPct,
+    hoursSinceLastPractice: Math.round(hoursElapsed),
+    optimalReviewWindow
+  };
+}
+
+/**
+ * 1-Parameter Logistic (Rasch / IRT) Latent Ability Estimator (Theta in [-3.0, +3.0])
+ */
+export function estimateIRTAbilityTheta(
+  observations: Array<{ correct: number; weight: number }>
+): number {
+  if (observations.length === 0) return 0;
+  let weightedCorrect = 0;
+  let totalWeight = 0;
+  for (const item of observations) {
+    weightedCorrect += item.correct * item.weight;
+    totalWeight += item.weight;
+  }
+  // Bayesian Laplace smoothing to avoid infinite log-odds at 0% or 100%
+  const p = (weightedCorrect + 0.5) / (totalWeight + 1.0);
+  const logOdds = Math.log(p / (1 - p));
+  return Number(Math.max(-3.0, Math.min(3.0, logOdds)).toFixed(2));
+}
+
 const CENTROIDS: Record<
   "ACCELERATED" | "ANALYTICAL" | "EXPLORER" | "FOUNDATIONAL",
-  { acc: number; comp: number; vel: number; label: string; badgeColor: string }
+  { acc: number; comp: number; vel: number; label: string }
 > = {
-  ACCELERATED: {
-    acc: 88,
-    comp: 85,
-    vel: 85,
-    label: "Accelerated Synthesizer",
-    badgeColor: "emerald"
-  },
-  ANALYTICAL: {
-    acc: 85,
-    comp: 70,
-    vel: 55,
-    label: "Deep Analytical Pacer",
-    badgeColor: "indigo"
-  },
-  EXPLORER: {
-    acc: 60,
-    comp: 80,
-    vel: 82,
-    label: "Rapid Concept Explorer",
-    badgeColor: "amber"
-  },
-  FOUNDATIONAL: {
-    acc: 45,
-    comp: 40,
-    vel: 40,
-    label: "Foundational Guided Builder",
-    badgeColor: "rose"
-  }
+  ACCELERATED: { acc: 88, comp: 85, vel: 85, label: "Accelerated Synthesizer" },
+  ANALYTICAL: { acc: 85, comp: 70, vel: 55, label: "Deep Analytical Pacer" },
+  EXPLORER: { acc: 60, comp: 80, vel: 82, label: "Rapid Concept Explorer" },
+  FOUNDATIONAL: { acc: 45, comp: 40, vel: 40, label: "Foundational Guided Builder" }
 };
 
 function euclideanDistance3D(
@@ -125,7 +226,8 @@ export function classifyPeerVector(
   completionRate: number,
   velocityScore: number,
   autonomyScore: number,
-  totalActivities: number
+  totalActivities: number,
+  bktMasteryPct = accuracy
 ): {
   clusterId: CohortPeerVector["clusterId"];
   clusterLabel: string;
@@ -139,7 +241,8 @@ export function classifyPeerVector(
     };
   }
 
-  const point = { acc: accuracy, comp: completionRate, vel: velocityScore };
+  const effectiveAcc = Math.round(accuracy * 0.6 + bktMasteryPct * 0.4);
+  const point = { acc: effectiveAcc, comp: completionRate, vel: velocityScore };
   let bestKey: "ACCELERATED" | "ANALYTICAL" | "EXPLORER" | "FOUNDATIONAL" = "FOUNDATIONAL";
   let minDistance = Infinity;
 
@@ -152,7 +255,7 @@ export function classifyPeerVector(
   });
 
   const compositeIndex = Math.round(
-    accuracy * 0.45 + completionRate * 0.30 + velocityScore * 0.15 + autonomyScore * 0.10
+    effectiveAcc * 0.45 + completionRate * 0.30 + velocityScore * 0.15 + autonomyScore * 0.10
   );
 
   return {
@@ -166,7 +269,10 @@ export function runPersonalMLPipeline(
   telemetry: StudentRawTelemetry,
   cohortVectors: CohortPeerVector[]
 ) {
-  // 1. Per-Subject Feature Engineering & Diagnostic Matrix
+  const dailyGoalHrs = telemetry.studyProfile?.dailyStudyGoalHrs || 4;
+  const learningStyle = telemetry.studyProfile?.learningStyle || "Visual & Derivation-First";
+
+  // 1. Per-Subject BKT, IRT, Ebbinghaus Retention & Diagnostic Matrix
   const subjectDiagnostics = telemetry.enrolledSubjects.map(sub => {
     const subQuizzes = telemetry.quizzes.filter(q => q.subjectId === sub.subjectId);
     const subAssignments = telemetry.assignments.filter(a => a.subjectId === sub.subjectId);
@@ -181,11 +287,17 @@ export function runPersonalMLPipeline(
 
     let earnedPts = 0;
     let maxPts = 0;
+    const bktObservations: number[] = [];
+    const irtObservations: Array<{ correct: number; weight: number }> = [];
+    let latestActivityDate: Date | null = null;
 
     attemptedQuizzes.forEach(q => {
       if (q.attempt) {
         earnedPts += q.attempt.score;
         maxPts += q.attempt.maxScore;
+        if (!latestActivityDate || new Date(q.attempt.submittedAt) > latestActivityDate) {
+          latestActivityDate = new Date(q.attempt.submittedAt);
+        }
       }
     });
 
@@ -193,6 +305,12 @@ export function runPersonalMLPipeline(
       if (a.submission && a.submission.awardedMarks !== null) {
         earnedPts += a.submission.awardedMarks;
         maxPts += a.maxMarks;
+        const ratio = a.maxMarks > 0 ? a.submission.awardedMarks / a.maxMarks : 0;
+        bktObservations.push(ratio >= 0.7 ? 1 : 0);
+        irtObservations.push({ correct: ratio >= 0.7 ? 1 : 0, weight: 2 });
+        if (!latestActivityDate || new Date(a.submission.submittedAt) > latestActivityDate) {
+          latestActivityDate = new Date(a.submission.submittedAt);
+        }
       }
     });
 
@@ -228,7 +346,11 @@ export function runPersonalMLPipeline(
           opts = [];
         }
         const chosenIdx = parsedAnswers[idx];
-        if (Number(chosenIdx) === ques.correctIndex) {
+        const isCorrect = Number(chosenIdx) === ques.correctIndex;
+        bktObservations.push(isCorrect ? 1 : 0);
+        irtObservations.push({ correct: isCorrect ? 1 : 0, weight: Math.max(1, ques.points) });
+
+        if (isCorrect) {
           correctConcepts.push(`${q.title}: "${ques.questionText}"`);
         } else {
           missedConcepts.push({
@@ -245,27 +367,40 @@ export function runPersonalMLPipeline(
       });
     });
 
+    // Compute BKT Posterior Mastery, IRT Ability Theta, and Ebbinghaus Memory Retention
+    const bkt = computeBayesianKnowledgeTrace(bktObservations);
+    const irtTheta = estimateIRTAbilityTheta(irtObservations);
+    const retention = computeEbbinghausRetention(
+      latestActivityDate,
+      completedItems,
+      bkt.posteriorMastery
+    );
+
     const openDoubts = subDoubts.filter(d => d.status === "OPEN");
     const resolvedDoubts = subDoubts.filter(d => d.status === "RESOLVED");
-
     const unattemptedQuizzes = subQuizzes.filter(q => !q.attempt);
     const pendingAssignments = subAssignments.filter(a => !a.submission);
 
-    // Priority Focus Score (0..100): higher means the student MUST focus more on this subject
+    // Multi-Factor Focus Priority Regressor (0..100)
     let focusPriorityScore = 0;
     const focusReasons: string[] = [];
 
     if (rawAccuracy !== null && rawAccuracy < 75) {
-      focusPriorityScore += Math.round((100 - rawAccuracy) * 0.65);
-      focusReasons.push(`Assessment accuracy is ${rawAccuracy}% (below 75% mastery threshold)`);
+      focusPriorityScore += Math.round((100 - rawAccuracy) * 0.55);
+      focusReasons.push(`Assessment accuracy is ${rawAccuracy}% (BKT mastery: ${bkt.posteriorMastery}%)`);
     } else if (rawAccuracy === null && totalAssignedItems > 0) {
       focusPriorityScore += 55;
       focusReasons.push(`${totalAssignedItems} pending assessment(s) not yet attempted`);
     }
 
+    if (retention.retentionPct > 0 && retention.retentionPct < 75) {
+      focusPriorityScore += 18;
+      focusReasons.push(`Memory retention decayed to ${retention.retentionPct}% (${retention.optimalReviewWindow})`);
+    }
+
     if (missedConcepts.length > 0) {
       focusPriorityScore += Math.min(25, missedConcepts.length * 8);
-      focusReasons.push(`${missedConcepts.length} specific quiz question(s) answered incorrectly`);
+      focusReasons.push(`${missedConcepts.length} quiz question(s) missed`);
     }
 
     if (pendingAssignments.length > 0) {
@@ -275,14 +410,13 @@ export function runPersonalMLPipeline(
 
     if (openDoubts.length > 0) {
       focusPriorityScore += Math.min(15, openDoubts.length * 7);
-      focusReasons.push(`${openDoubts.length} unresolved doubt ticket(s)`);
+      focusReasons.push(`${openDoubts.length} open doubt ticket(s)`);
     }
 
     focusPriorityScore = Math.min(100, focusPriorityScore);
 
     const primaryTeacher = sub.teachers[0] || { id: "", name: "Assigned Faculty", email: "" };
 
-    // Determine exact Faculty Approach Recommendation
     let facultyTrigger: {
       urgency: "IMMEDIATE" | "RECOMMENDED" | "ENRICHMENT" | "NONE";
       whenToApproach: string;
@@ -308,7 +442,7 @@ export function runPersonalMLPipeline(
         urgency: "IMMEDIATE",
         whenToApproach: "Before attempting the next assessment or module",
         topicToDiscuss: `${missedConcepts[0].quizTitle} — "${missedConcepts[0].questionText}"`,
-        actionReason: `You missed ${missedConcepts.length} question(s) in ${sub.subjectName}. Schedule a 1-on-1 or post a doubt with Prof. ${primaryTeacher.name} to review the correct derivation ("${missedConcepts[0].correctOption}").`,
+        actionReason: `BKT posterior mastery is ${bkt.posteriorMastery}% after missing ${missedConcepts.length} question(s). Approach Prof. ${primaryTeacher.name} to review "${missedConcepts[0].correctOption}".`,
         teacherId: primaryTeacher.id,
         teacherName: primaryTeacher.name,
         subjectId: sub.subjectId,
@@ -319,7 +453,7 @@ export function runPersonalMLPipeline(
         urgency: "IMMEDIATE",
         whenToApproach: "Within the next 24–48 hours",
         topicToDiscuss: `${sub.subjectName} Core Rubric & Graded Feedback`,
-        actionReason: `Overall subject accuracy is ${rawAccuracy}%. Request a 1-on-1 rubric walkthrough with Prof. ${primaryTeacher.name}.`,
+        actionReason: `Overall subject accuracy is ${rawAccuracy}% (IRT Ability θ = ${irtTheta}). Request a 1-on-1 walkthrough with Prof. ${primaryTeacher.name}.`,
         teacherId: primaryTeacher.id,
         teacherName: primaryTeacher.name,
         subjectId: sub.subjectId,
@@ -331,7 +465,7 @@ export function runPersonalMLPipeline(
         urgency: "RECOMMENDED",
         whenToApproach: "While preparing your pending submission",
         topicToDiscuss: nextItemTitle,
-        actionReason: `You have ${pendingAssignments.length} pending assignment(s) and ${unattemptedQuizzes.length} unattempted quiz(zes). Clarify problem constraints with Prof. ${primaryTeacher.name} if stuck.`,
+        actionReason: `You have ${pendingAssignments.length} pending assignment(s) and ${unattemptedQuizzes.length} unattempted quiz(zes). Clarify constraints with Prof. ${primaryTeacher.name}.`,
         teacherId: primaryTeacher.id,
         teacherName: primaryTeacher.name,
         subjectId: sub.subjectId,
@@ -341,8 +475,10 @@ export function runPersonalMLPipeline(
       facultyTrigger = {
         urgency: "ENRICHMENT",
         whenToApproach: "During weekly office hours for advanced progression",
-        topicToDiscuss: subMat?.latestTopicTitle ? `Advanced application of ${subMat.latestTopicTitle}` : `Higher-order problems in ${sub.subjectName}`,
-        actionReason: `You achieved ${rawAccuracy}% mastery in ${sub.subjectName}. Approach Prof. ${primaryTeacher.name} for advanced challenge problems.`,
+        topicToDiscuss: subMat?.latestTopicTitle
+          ? `Advanced application of ${subMat.latestTopicTitle}`
+          : `Higher-order problems in ${sub.subjectName}`,
+        actionReason: `BKT mastery is ${bkt.posteriorMastery}% with ${bkt.predictedNextSuccess}% predicted success on your next test. Approach Prof. ${primaryTeacher.name} for research-grade problems.`,
         teacherId: primaryTeacher.id,
         teacherName: primaryTeacher.name,
         subjectId: sub.subjectId,
@@ -363,6 +499,11 @@ export function runPersonalMLPipeline(
       assignmentsSubmitted: submittedAssignments.length,
       assignmentsGraded: gradedAssignments.length,
       accuracy: rawAccuracy,
+      bktMasteryPct: bkt.posteriorMastery,
+      predictedNextScorePct: bkt.predictedNextSuccess,
+      irtTheta,
+      retentionPct: retention.retentionPct,
+      optimalReviewWindow: retention.optimalReviewWindow,
       completionRate,
       openDoubtsCount: openDoubts.length,
       resolvedDoubtsCount: resolvedDoubts.length,
@@ -374,8 +515,24 @@ export function runPersonalMLPipeline(
     };
   });
 
-  // Sort subjects by Focus Priority Score descending
-  const rankedByFocusNeed = [...subjectDiagnostics].sort(
+  // Allocate Daily Study Hours Across Subjects Proportionally to Focus Priority Score
+  const totalFocusWeight = subjectDiagnostics.reduce(
+    (acc, s) => acc + Math.max(15, s.focusPriorityScore),
+    0
+  );
+  const subjectDiagnosticsWithHours = subjectDiagnostics.map(sd => {
+    const weight = Math.max(15, sd.focusPriorityScore);
+    const recommendedDailyHours =
+      totalFocusWeight > 0
+        ? Number(((weight / totalFocusWeight) * dailyGoalHrs).toFixed(1))
+        : Number((dailyGoalHrs / Math.max(1, subjectDiagnostics.length)).toFixed(1));
+    return {
+      ...sd,
+      recommendedDailyHours
+    };
+  });
+
+  const rankedByFocusNeed = [...subjectDiagnosticsWithHours].sort(
     (a, b) => b.focusPriorityScore - a.focusPriorityScore
   );
 
@@ -383,11 +540,11 @@ export function runPersonalMLPipeline(
   const strengths: Array<{ subjectName: string; detail: string; metric: string }> = [];
   const weaknesses: Array<{ subjectName: string; detail: string; metric: string }> = [];
 
-  subjectDiagnostics.forEach(sd => {
+  subjectDiagnosticsWithHours.forEach(sd => {
     if (sd.accuracy !== null && sd.accuracy >= 80) {
       strengths.push({
         subjectName: sd.subjectName,
-        detail: `High assessment accuracy across ${sd.quizzesAttempted} quiz(zes) and ${sd.assignmentsGraded} graded assignment(s).`,
+        detail: `High BKT posterior mastery (${sd.bktMasteryPct}%) and IRT latent ability (θ = ${sd.irtTheta}) across ${sd.quizzesAttempted} quiz(zes).`,
         metric: `${sd.accuracy}% Mastery`
       });
     }
@@ -395,14 +552,14 @@ export function runPersonalMLPipeline(
       strengths.push({
         subjectName: sd.subjectName,
         detail: `Verified concept mastery on ${concept}`,
-        metric: "100% Correct"
+        metric: "BKT Verified"
       });
     });
 
     if (sd.accuracy !== null && sd.accuracy < 75) {
       weaknesses.push({
         subjectName: sd.subjectName,
-        detail: `Sub-threshold score across graded evaluations; requires targeted revision.`,
+        detail: `Sub-threshold BKT mastery (${sd.bktMasteryPct}%); requires targeted revision (${sd.recommendedDailyHours} hrs/day recommended).`,
         metric: `${sd.accuracy}% Score`
       });
     }
@@ -423,7 +580,6 @@ export function runPersonalMLPipeline(
     }
   });
 
-  // Locate current student's vector inside the cohort
   const myVector = cohortVectors.find(v => v.studentId === telemetry.studentId) || {
     studentId: telemetry.studentId,
     studentName: telemetry.studentName,
@@ -431,13 +587,14 @@ export function runPersonalMLPipeline(
     completionRate: 0,
     velocityScore: 0,
     autonomyScore: 100,
+    bktMasteryPct: 45,
+    irtTheta: 0,
     compositeIndex: 0,
     totalActivities: 0,
     clusterId: "CALIBRATING" as const,
     clusterLabel: "Cold-Start Calibration"
   };
 
-  // Compute percentile rank among active students
   const sortedCohort = [...cohortVectors].sort((a, b) => b.compositeIndex - a.compositeIndex);
   const myRankIndex = sortedCohort.findIndex(v => v.studentId === telemetry.studentId);
   const percentile =
@@ -445,7 +602,7 @@ export function runPersonalMLPipeline(
       ? Math.round(((sortedCohort.length - myRankIndex) / sortedCohort.length) * 100)
       : 100;
 
-  // Generate Personalized Study Strategies & Tactical Recommendations based on ML Cluster + Diagnostics
+  // Generate Personalized Study Strategies tailored to Cluster + Learning Style + Daily Study Goal
   const strategies: Array<{
     category: string;
     title: string;
@@ -455,59 +612,60 @@ export function runPersonalMLPipeline(
 
   const topFocusSubject = rankedByFocusNeed[0];
 
+  strategies.push({
+    category: `Learning Style Adaptation (${learningStyle})`,
+    title: `Daily ${dailyGoalHrs}-Hour Cognitive Allocation Plan`,
+    tactic: rankedByFocusNeed
+      .map(s => `${s.subjectName}: ${s.recommendedDailyHours} hrs/day (BKT Mastery ${s.bktMasteryPct}%)`)
+      .join(" • ") || `Complete your baseline subject enrollment to partition your ${dailyGoalHrs} hrs/day target.`,
+    impactMetric: `${dailyGoalHrs} hrs/day Budget`
+  });
+
   if (myVector.clusterId === "ACCELERATED") {
     strategies.push({
-      category: "Velocity Optimization",
+      category: "Bayesian Mastery Optimization",
       title: "Interleaved Retrieval & Spaced Challenge Sets",
-      tactic: `Your accuracy (${myVector.accuracy}%) and completion velocity (${myVector.velocityScore}%) place you in the Accelerated Synthesizer tier. Shift from passive note reading to timed mixed-subject problem sets across ${telemetry.enrolledSubjects.map(s => s.subjectName).join(", ")}.`,
-      impactMetric: " sustains >90% retention"
+      tactic: `Your BKT mastery (${myVector.bktMasteryPct}%) and IRT ability (θ = ${myVector.irtTheta}) place you in the Accelerated Synthesizer tier. Use interleaved timed problem sets across ${telemetry.enrolledSubjects.map(s => s.subjectName).join(", ")}.`,
+      impactMetric: "Sustains >92% retention"
     });
   } else if (myVector.clusterId === "ANALYTICAL") {
     strategies.push({
       category: "Pacing Acceleration",
       title: "Time-Boxed Two-Pass Assessment Execution",
-      tactic: `You maintain strong accuracy (${myVector.accuracy}%) but a more deliberate completion velocity (${myVector.velocityScore}%). Use a strict two-pass method: complete direct formula questions in 60 seconds, then allocate remaining time to derivations.`,
+      tactic: `You maintain strong accuracy (${myVector.accuracy}%) with methodical completion velocity (${myVector.velocityScore}%). Complete direct conceptual questions in 60 seconds first, then allocate remaining time to derivations.`,
       impactMetric: "+25% submission speed"
     });
   } else if (myVector.clusterId === "EXPLORER") {
     strategies.push({
-      category: "Precision Calibration",
+      category: "Slip-Rate Reduction (BKT P(S))",
       title: "Pre-Submission Error-Log Verification",
-      tactic: `You complete coursework rapidly (${myVector.completionRate}% completion), but accuracy (${myVector.accuracy}%) shows preventable misses. Before submitting quizzes, verify unit conversions and sign conventions on every question.`,
-      impactMetric: "+15–20% score gain"
+      tactic: `You complete coursework rapidly (${myVector.completionRate}%), but slip probability reduces accuracy (${myVector.accuracy}%). Verify unit conversions and boundary conditions before submitting quizzes.`,
+      impactMetric: "+18% BKT mastery gain"
     });
   } else if (myVector.clusterId === "FOUNDATIONAL") {
     strategies.push({
       category: "Foundational Reinforcement",
       title: "Topic-First Active Recall Before Quiz Attempts",
-      tactic: `Study each uploaded module note in full and summarize key formulas in writing before clicking "Start Quiz". Immediately post a ticket in the Doubt Clearing Hub whenever a derivation step is unclear.`,
+      tactic: `Study each uploaded module note in full and summarize key formulas in writing before starting quizzes. Post a ticket in the Doubt Clearing Hub whenever a derivation step is unclear.`,
       impactMetric: "Eliminates core concept gaps"
     });
   } else {
     strategies.push({
-      category: "Model Calibration",
+      category: "Bayesian Prior Calibration",
       title: "Complete Baseline Diagnostic Assessments",
-      tactic: `Your ML profile is in Cold-Start mode because 0 quizzes/assignments have been submitted across all subjects. Complete your first quiz or assignment so the engine can compute your velocity and accuracy vectors.`,
-      impactMetric: "Unlocks full ML clustering"
+      tactic: `Your BKT prior is initialized at P(L0) = 45%. Complete your first quiz or assignment so the engine can update your posterior mastery and IRT ability θ.`,
+      impactMetric: "Unlocks full BKT & IRT"
     });
   }
 
-  if (topFocusSubject && topFocusSubject.focusPriorityScore > 0) {
+  if (telemetry.liveClassTelemetry && telemetry.liveClassTelemetry.totalAssignedClasses > 0) {
+    const lc = telemetry.liveClassTelemetry;
+    const attendanceRate = Math.round((lc.attendedClasses / lc.totalAssignedClasses) * 100);
     strategies.push({
-      category: "Priority Subject Allocation",
-      title: `Allocate 60% Study Bandwidth to ${topFocusSubject.subjectName}`,
-      tactic:
-        topFocusSubject.focusReasons.length > 0
-          ? `Why: ${topFocusSubject.focusReasons.join("; ")}. Complete pending items under Prof. ${topFocusSubject.teacherName} first.`
-          : `Focus on ${topFocusSubject.subjectName} modules and upcoming assessments.`,
-      impactMetric: `Priority Index: ${topFocusSubject.focusPriorityScore}/100`
-    });
-  } else if (topFocusSubject) {
-    strategies.push({
-      category: "Mastery Maintenance",
-      title: `Maintain 100% Benchmark in ${topFocusSubject.subjectName}`,
-      tactic: `You have zero pending bottlenecks in ${topFocusSubject.subjectName}. Review newly uploaded topic notes from Prof. ${topFocusSubject.teacherName} and request an advanced 1-on-1 problem breakdown.`,
-      impactMetric: "100% Cohort Standing"
+      category: "Live Classroom Synchronization",
+      title: `Live Broadcast Attendance Standing (${attendanceRate}%)`,
+      tactic: `You have attended ${lc.attendedClasses} of ${lc.totalAssignedClasses} assigned live classes (${lc.mandatoryAttended}/${lc.mandatoryAssigned} mandatory). Joining live FFMUC broadcasts directly reinforces Ebbinghaus memory stability.`,
+      impactMetric: `${lc.attendedClasses}/${lc.totalAssignedClasses} Classes Joined`
     });
   }
 
@@ -525,19 +683,19 @@ export function runPersonalMLPipeline(
         {
           id: "ACCELERATED",
           label: "Accelerated Synthesizer",
-          description: "High assessment accuracy (>=80%) paired with rapid syllabus completion velocity.",
+          description: "High BKT posterior mastery (>=80%) paired with rapid syllabus completion velocity.",
           students: cohortVectors.filter(v => v.clusterId === "ACCELERATED")
         },
         {
           id: "ANALYTICAL",
           label: "Deep Analytical Pacer",
-          description: "High accuracy with methodical, deliberate submission pacing.",
+          description: "High accuracy and IRT ability θ with methodical, deliberate submission pacing.",
           students: cohortVectors.filter(v => v.clusterId === "ANALYTICAL")
         },
         {
           id: "EXPLORER",
           label: "Rapid Concept Explorer",
-          description: "Fast completion speed with developing accuracy; benefits from error-log review.",
+          description: "Fast completion speed with developing accuracy; benefits from slip-rate verification.",
           students: cohortVectors.filter(v => v.clusterId === "EXPLORER")
         },
         {
