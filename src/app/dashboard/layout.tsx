@@ -181,7 +181,7 @@ export default function DashboardLayout({
               value={searchQuery}
               onFocus={() => setSearchOpen(true)}
               onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-              placeholder="Press Ctrl+G to search courses, channels, or doubts"
+              placeholder="Search courses & hubs..."
               className="w-full bg-transparent text-xs focus:outline-none"
             />
           </div>
@@ -235,7 +235,7 @@ export default function DashboardLayout({
                     Sign out
                   </button>
 <a href="/dashboard/profile" className="block w-full text-center py-2 px-4 mt-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all">
-  View & Edit Full Profile
+  Edit Profile
 </a>
 
                 </div>

@@ -1,260 +1,539 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
-interface AIMetrics {
-  studyVelocityHours: number | null;
-  velocityVsLastWeek: number | null;
-  assessmentAccuracy: number | null;
-  accuracyPercentile: string | null;
-  aiSuggestionTitle: string | null;
-  aiSuggestionText: string | null;
-}
+export default function StudentLearningPlayerCenter() {
+  const [cohorts, setCohorts] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [queueModules, setQueueModules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-interface LiveSession {
-  id: string;
-  title: string;
-  faculty: string;
-  scheduledTime: string;
-  meetUrl: string;
-}
-
-export default function StudentDashboard() {
-  const [metrics, setMetrics] = useState<AIMetrics | null>(null);
-  const [sessions, setSessions] = useState<LiveSession[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("ALL");
+  const [activeSession, setActiveSession] = useState<any | null>(null);
+  const [activeTopic, setActiveTopic] = useState<any | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        const [metricsRes, sessionsRes] = await Promise.all([
-          fetch("/api/student/metrics").catch(() => null),
-          fetch("/api/student/sessions").catch(() => null)
-        ]);
-
-        if (metricsRes?.ok) {
-          setMetrics(await metricsRes.json());
-        } else {
-          // STRICT PRODUCTION LOGIC: No fake hardcoded data
-          setMetrics({
-            studyVelocityHours: null, velocityVsLastWeek: null,
-            assessmentAccuracy: null, accuracyPercentile: null,
-            aiSuggestionTitle: null, aiSuggestionText: null
-          });
-        }
-
-        if (sessionsRes?.ok) {
-          setSessions(await sessionsRes.json());
-        } else {
-          setSessions([]);
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+    fetchPlayerState();
+    const interval = setInterval(fetchPlayerState, 8000);
+    return () => clearInterval(interval);
   }, []);
 
-  const today = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
+  const fetchPlayerState = async () => {
+    try {
+      const res = await fetch("/api/live-classes?role=student");
+      if (res.ok) {
+        const data = await res.json();
+        const sessionList = data.sessions || [];
+        setCohorts(data.enrolledCohorts || []);
+        setSessions(sessionList);
+        setQueueModules(data.learningQueueModules || []);
+
+        // Automatically spotlight an active LIVE broadcast or the next SCHEDULED broadcast
+        if (!activeSession && !activeTopic && sessionList.length > 0) {
+          const liveNow = sessionList.find((s: any) => s.status === "LIVE");
+          const nextScheduled = sessionList.find((s: any) => s.status === "SCHEDULED");
+          setActiveSession(liveNow || nextScheduled || sessionList[0]);
+        } else if (activeSession) {
+          const refreshed = sessionList.find((s: any) => s.id === activeSession.id);
+          if (refreshed) setActiveSession(refreshed);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinBroadcast = async (sessionToJoin?: any) => {
+    const target =
+      sessionToJoin ||
+      activeSession ||
+      sessions.find(s => s.status === "LIVE") ||
+      sessions.find(s => s.status === "SCHEDULED");
+
+    if (target) {
+      // Open FFMUC Live Room in a NEW TAB immediately so popup blockers never interfere
+      window.open(target.streamUrl, "_blank", "noopener,noreferrer");
+
+      await fetch("/api/live-classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "JOIN_SESSION", sessionId: target.id })
+      });
+      await fetchPlayerState();
+    } else if (cohorts.length > 0) {
+      // Fallback: Open the student's subject-specific room in a new tab
+      const activeSub =
+        cohorts.find(c => c.subjectId === selectedSubjectId) || cohorts[0];
+      const cleanName = activeSub.subjectName.replace(/[^a-zA-Z0-9]/g, "");
+      const fallbackUrl = `https://meet.ffmuc.net/GuruCool_Subject_${cleanName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`;
+      window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+    } else {
+      alert("Please enroll in a subject via the Course Catalog first.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[500px]">
+        <div className="w-9 h-9 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const filteredSessions = sessions.filter(s =>
+    selectedSubjectId === "ALL" ? true : s.subjectId === selectedSubjectId
+  );
+  const filteredModules = queueModules.filter(m =>
+    selectedSubjectId === "ALL" ? true : m.subjectId === selectedSubjectId
+  );
+
+  const liveSessions = filteredSessions.filter(s => s.status === "LIVE");
+  const scheduledSessions = filteredSessions.filter(s => s.status === "SCHEDULED");
+
+  // Unique subjects from enrolled cohorts
+  const uniqueSubjects = Array.from(
+    new Map(cohorts.map(c => [c.subjectId, c])).values()
+  );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-900 pb-20 selection:bg-blue-200">
-      
-      {/* ================= EXACT HEADER MATCH ================= */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200/60 shadow-sm backdrop-blur-xl bg-white/90">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
-          
-          {/* Left: Hamburger & Exact Logo Placement */}
-          <div className="flex items-center gap-6">
-            <button className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-slate-50 transition-colors active:scale-95 shadow-sm">
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-            
-            <div className="flex items-center gap-3 cursor-pointer">
-              {/* Image Placeholder for your Dual-Crest Logo */}
-              <div className="w-[70px] h-[35px] bg-slate-100 rounded-md border border-slate-200 flex items-center justify-center overflow-hidden relative">
-                 <span className="text-[8px] font-bold text-slate-400">LOGO.PNG</span>
-                 {/* Once you have your image, replace the above span with: */}
-                 {/* <img src="/your-logo.png" alt="GuruCool" className="w-full h-full object-contain" /> */}
-              </div>
-              <div className="flex flex-col justify-center">
-                <h1 className="text-[20px] font-black text-[#0A66C2] leading-none tracking-tight">GuruCOOL.</h1>
-                <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase mt-0.5">BY GNOVATECH</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Center: Date & Navigation Links */}
-          <div className="hidden lg:flex items-center gap-10 text-[14px] font-bold text-slate-600">
-            <span className="text-slate-500 font-medium mr-2">{today}</span>
-            <Link href="/student/player" className="hover:text-[#0A66C2] transition-colors flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> My Learning Player
-            </Link>
-            <Link href="/catalog" className="hover:text-[#0A66C2] transition-colors flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z"></path></svg> Course Catalog
-            </Link>
-            <Link href="/hubs" className="hover:text-[#0A66C2] transition-colors flex items-center gap-2">
-              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg> Course Hubs
-            </Link>
-          </div>
-
-          {/* Right: Profile Badge */}
-          <div className="flex items-center gap-3 border border-slate-200 rounded-full p-1 pr-5 hover:shadow-md transition-shadow cursor-pointer bg-white active:scale-95">
-            <div className="w-10 h-10 bg-[#0A66C2] rounded-full flex items-center justify-center text-white font-black text-sm shadow-inner">
-              RU
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[13px] font-black text-slate-900 leading-tight">Rupayan</span>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-16">
-        
-        {/* ================= TITLE ================= */}
-        <div className="mb-12 animate-in slide-in-from-bottom-4 fade-in duration-700 ease-out">
-          <h2 className="text-[38px] font-black tracking-tight text-[#0F172A] mb-2">AI Insights & Mastery</h2>
-          <p className="text-lg text-slate-500 font-medium">Your learning trajectory, quantified.</p>
-        </div>
-
-        {/* ================= METRICS GRID ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          
-          {/* Card 1: Velocity */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
-            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Study Velocity</h3>
-            
-            <div className="flex items-baseline gap-1 relative z-10">
-              <span className="text-[52px] leading-none font-black tracking-tighter text-[#0F172A]">
-                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.studyVelocityHours ?? '--'}
+    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      {/* TOP BAR MATCHING SCREENSHOT 2 */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-indigo-400">
+            PHYGITAL CLASSROOM • FFMUC STREAM ENGINE
+          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <h1 className="text-3xl font-black text-white tracking-tight">
+              My Learning Player
+            </h1>
+            {liveSessions.length > 0 && (
+              <span className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                {liveSessions.length} Live Broadcast Active
               </span>
-              {!isLoading && <span className="text-[22px] font-black text-[#94A3B8]">hrs</span>}
-            </div>
-            
-            <div className="mt-6 relative z-10">
-              {!isLoading && metrics?.velocityVsLastWeek !== null ? (
-                <span className="bg-[#ECFDF5] text-[#10B981] text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
-                  +{metrics?.velocityVsLastWeek}% vs last week
-                </span>
-              ) : !isLoading ? (
-                <span className="bg-slate-50 text-slate-400 text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
-                  Awaiting Data
-                </span>
-              ) : null}
-            </div>
-
-            {/* Stopwatch Watermark SVG */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-50 group-hover:text-slate-100 transition-colors pointer-events-none">
-              <svg className="w-28 h-28" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.02 9 9 9a8.994 8.994 0 007.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-              </svg>
-            </div>
-          </div>
-
-          {/* Card 2: Accuracy */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] relative overflow-hidden group">
-            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#94A3B8] mb-4">Assessment Accuracy</h3>
-            
-            <div className="flex items-baseline gap-1 relative z-10">
-              <span className="text-[52px] leading-none font-black tracking-tighter text-[#0F172A]">
-                {isLoading ? <div className="h-12 w-24 bg-slate-100 rounded-lg animate-pulse inline-block"></div> : metrics?.assessmentAccuracy ?? '--'}
-              </span>
-              {!isLoading && <span className="text-[22px] font-black text-[#94A3B8]">%</span>}
-            </div>
-            
-            <div className="mt-6 relative z-10">
-              {!isLoading && metrics?.accuracyPercentile !== null ? (
-                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
-                  {metrics?.accuracyPercentile}
-                </span>
-              ) : !isLoading ? (
-                <span className="bg-slate-50 text-slate-400 text-[12px] font-black px-4 py-1.5 rounded-md uppercase tracking-wider">
-                  Take a quiz
-                </span>
-              ) : null}
-            </div>
-
-            {/* Target Watermark SVG */}
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-rose-50 group-hover:text-rose-100 transition-colors pointer-events-none">
-              <svg className="w-28 h-28" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-              </svg>
-            </div>
-          </div>
-
-          {/* Card 3: GuruAI - Exact Match (Dark Blue) */}
-          <div className="bg-[#0B132B] rounded-3xl p-8 shadow-xl hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] text-white flex flex-col justify-center">
-            <h3 className="text-[12px] font-black uppercase tracking-widest text-[#38BDF8] mb-3">
-              GURUAI SUGGESTION
-            </h3>
-            
-            {isLoading ? (
-              <div className="space-y-3 mt-2">
-                <div className="h-7 w-3/4 bg-slate-800 rounded-md animate-pulse"></div>
-                <div className="h-4 w-full bg-slate-800 rounded-md animate-pulse mt-3"></div>
-                <div className="h-4 w-5/6 bg-slate-800 rounded-md animate-pulse"></div>
-              </div>
-            ) : (
-              <>
-                <h4 className="text-[22px] font-bold mb-2 text-white leading-tight">
-                  {metrics?.aiSuggestionTitle || 'Analyzing Study Patterns...'}
-                </h4>
-                <p className="text-[15px] text-[#94A3B8] leading-relaxed font-medium">
-                  {metrics?.aiSuggestionText || 'GuruAI requires more quiz data and watch time to generate a customized learning path for you.'}
-                </p>
-              </>
             )}
           </div>
         </div>
 
-        {/* ================= SESSIONS SECTION ================= */}
-        <div className="animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-both ease-out">
-          <h2 className="text-[24px] font-black tracking-tight text-[#0F172A] mb-6">Upcoming Live Concierge Sessions</h2>
-          
-          <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[320px] text-center">
-            {isLoading ? (
-               <div className="flex flex-col items-center gap-4">
-                 <div className="w-16 h-16 bg-slate-50 rounded-2xl animate-pulse"></div>
-                 <div className="h-6 w-48 bg-slate-100 rounded-md animate-pulse"></div>
-                 <div className="h-4 w-64 bg-slate-100 rounded-md animate-pulse"></div>
-               </div>
-            ) : sessions && sessions.length > 0 ? (
-              <div className="w-full flex flex-col gap-4">
-                {sessions.map(session => (
-                   <div key={session.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                     <div className="text-left">
-                       <h4 className="text-lg font-black text-slate-900">{session.title}</h4>
-                       <p className="text-sm font-bold text-slate-500">{session.faculty} • {session.scheduledTime}</p>
-                     </div>
-                     <button onClick={() => window.open(session.meetUrl, '_blank')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
-                       Join Mentorship
-                     </button>
-                   </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/dashboard"
+            className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] border border-white/10 text-slate-200 font-bold text-xs transition-all"
+          >
+            ← Back to AI Insights
+          </Link>
+          <button
+            onClick={() => handleJoinBroadcast()}
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition-all"
+          >
+            POP-OUT LIVE STREAM ↗
+          </button>
+        </div>
+      </div>
+
+      {/* SUBJECT-SPECIFIC FILTER BAR */}
+      {uniqueSubjects.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap bg-[#1C1C24] p-2.5 rounded-2xl border border-white/10">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">
+            Filter by Enrolled Subject:
+          </span>
+          <button
+            onClick={() => setSelectedSubjectId("ALL")}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              selectedSubjectId === "ALL"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            All Enrolled Subjects
+          </button>
+          {uniqueSubjects.map((sub: any) => (
+            <button
+              key={sub.subjectId}
+              onClick={() => {
+                setSelectedSubjectId(sub.subjectId);
+                const subLive = sessions.find(
+                  s => s.subjectId === sub.subjectId && s.status === "LIVE"
+                );
+                const subSched = sessions.find(
+                  s => s.subjectId === sub.subjectId && s.status === "SCHEDULED"
+                );
+                if (subLive || subSched) {
+                  setActiveTopic(null);
+                  setActiveSession(subLive || subSched);
+                }
+              }}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                selectedSubjectId === sub.subjectId
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {sub.subjectName} (Prof. {sub.teacherName})
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* MAIN 12-COLUMN PLAYER & ACTIVE LEARNING QUEUE GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* LEFT 8 COLUMNS: PRIMARY BROADCAST & VOD STAGE */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className="bg-black rounded-[32px] border border-white/10 p-8 sm:p-12 min-h-[460px] flex flex-col items-center justify-center text-center relative overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-black pointer-events-none" />
+
+            {activeTopic ? (
+              /* SELECTED CURRICULUM TOPIC VIEW */
+              <div className="relative z-10 max-w-xl space-y-5">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase">
+                    {activeTopic.subjectName} • {activeTopic.contentType}
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  {activeTopic.title}
+                </h2>
+                {activeTopic.bodyText && (
+                  <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed bg-white/5 p-5 rounded-2xl border border-white/10 text-left max-h-56 overflow-y-auto">
+                    {activeTopic.bodyText}
+                  </p>
+                )}
+                <div className="flex items-center justify-center gap-4 pt-2 flex-wrap">
+                  {activeTopic.fileUrl && (
+                    <a
+                      href={activeTopic.fileUrl}
+                      download={activeTopic.fileName || "lecture-material"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg"
+                    >
+                      Open / Download Material ({activeTopic.fileName || activeTopic.contentType}) ↗
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setActiveTopic(null)}
+                    className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider"
+                  >
+                    Return to Live Broadcast Stage
+                  </button>
+                </div>
+              </div>
+            ) : activeSession ? (
+              /* SELECTED OR ACTIVE LIVE CLASS BROADCAST STAGE */
+              <div className="relative z-10 max-w-xl space-y-5">
+                <button
+                  onClick={() => handleJoinBroadcast(activeSession)}
+                  className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-transform hover:scale-105 shadow-2xl ${
+                    activeSession.status === "LIVE"
+                      ? "bg-rose-600 text-white shadow-rose-600/40"
+                      : "bg-indigo-600/30 border border-indigo-500/40 text-indigo-300"
+                  }`}
+                >
+                  <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {activeSession.status === "LIVE" ? (
+                    <span className="px-3.5 py-1 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                      LIVE BROADCAST ON AIR
+                    </span>
+                  ) : activeSession.status === "SCHEDULED" ? (
+                    <span className="px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-widest">
+                      SCHEDULED • {new Date(activeSession.scheduledAt).toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-widest">
+                      COMPLETED SESSION
+                    </span>
+                  )}
+
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase">
+                    {activeSession.subjectName} • Prof. {activeSession.teacherName}
+                  </span>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  {activeSession.title}
+                </h2>
+
+                {activeSession.moduleTitle && (
+                  <p className="text-xs font-bold text-indigo-400">
+                    Curriculum Module: {activeSession.moduleTitle}
+                  </p>
+                )}
+
+                <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                  {activeSession.agenda ||
+                    "Click 'Join Active Broadcast' below to launch the subject-specific FFMUC video classroom in a new browser tab."}
+                </p>
+
+                <div className="flex items-center justify-center gap-4 pt-3 flex-wrap">
+                  <button
+                    onClick={() => handleJoinBroadcast(activeSession)}
+                    className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition-all"
+                  >
+                    JOIN ACTIVE BROADCAST ↗
+                  </button>
+                  <Link
+                    href="/dashboard/curriculum"
+                    className="px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
+                  >
+                    OPEN SUBJECT SYLLABUS
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              /* DEFAULT READY STATE WHEN NO SESSION IS SCHEDULED YET */
+              <div className="relative z-10 max-w-md space-y-5">
+                <button
+                  onClick={() => handleJoinBroadcast()}
+                  className="w-16 h-16 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-400 mx-auto flex items-center justify-center hover:scale-105 transition-all"
+                >
+                  <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+                <h2 className="text-xl sm:text-2xl font-black text-white">
+                  Ready for Live Broadcast or Recorded VOD
+                </h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Select an enrolled module from the Active Learning Queue on the right or join your subject's active faculty broadcast room in a new tab.
+                </p>
+                <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+                  <button
+                    onClick={() => handleJoinBroadcast()}
+                    className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30"
+                  >
+                    JOIN ACTIVE BROADCAST
+                  </button>
+                  <Link
+                    href="/dashboard/catalog"
+                    className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase tracking-wider"
+                  >
+                    BROWSE COURSE CATALOG
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SUBJECT-SPECIFIC LIVE & SCHEDULED SESSIONS LIST */}
+          <div className="bg-[#1C1C24] rounded-[28px] border border-white/10 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-white">
+                Course-Specific Live Classes ({filteredSessions.length})
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400">
+                Opens in New Tab • Auto-Logs Attendance
+              </span>
+            </div>
+
+            {filteredSessions.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4">
+                No live classes have been scheduled for this subject filter yet. When your faculty schedules or starts a class in their Command Center, it syncs here automatically.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredSessions.map(sess => (
+                  <div
+                    key={sess.id}
+                    onClick={() => {
+                      setActiveTopic(null);
+                      setActiveSession(sess);
+                    }}
+                    className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                      activeSession?.id === sess.id && !activeTopic
+                        ? "bg-indigo-600/15 border-indigo-500"
+                        : "bg-[#13131A] border-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase">
+                          {sess.subjectName}
+                        </span>
+                        {sess.status === "LIVE" ? (
+                          <span className="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase">
+                            ● LIVE NOW
+                          </span>
+                        ) : sess.status === "SCHEDULED" ? (
+                          <span className="text-[10px] font-bold text-amber-400">
+                            {new Date(sess.scheduledAt).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-400">
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-black text-white">{sess.title}</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Prof. {sess.teacherName} {sess.moduleTitle ? `• ${sess.moduleTitle}` : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-slate-400">
+                        {sess.hasJoined ? "✓ Attendance Logged" : `${sess.durationMinutes} mins`}
+                      </span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleJoinBroadcast(sess);
+                        }}
+                        className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px]"
+                      >
+                        Launch Tab ↗
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
-            ) : (
-              <div className="animate-in fade-in zoom-in-95 duration-500">
-                {/* Recreated exact blue video icon container */}
-                <div className="w-[72px] h-[72px] bg-[#EFF6FF] rounded-2xl flex items-center justify-center text-[#2563EB] mx-auto mb-6">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                </div>
-                <h3 className="text-[20px] font-black text-[#0F172A] mb-2">No Live Mentorships Scheduled</h3>
-                <p className="text-[#64748B] text-[15px] font-medium max-w-md mx-auto">
-                  Submit a doubt in the Expert Helpdesk to trigger a 1-on-1 video breakdown.
-                </p>
-              </div>
             )}
           </div>
         </div>
 
-      </main>
+        {/* RIGHT 4 COLUMNS: ACTIVE LEARNING QUEUE (SYNCED WITH ENROLLED COURSES) */}
+        <div className="lg:col-span-4">
+          <div className="bg-[#1C1C24] rounded-[32px] border border-white/10 p-6 flex flex-col justify-between h-full space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-black text-white">Active Learning Queue</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Your real-time live broadcasts and subject modules synced directly with your enrolled courses.
+                </p>
+              </div>
+
+              {cohorts.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-[#13131A] border border-white/5 text-center space-y-2">
+                  <p className="text-xs font-bold text-slate-400">
+                    No enrolled courses queued yet.
+                  </p>
+                  <Link
+                    href="/dashboard/catalog"
+                    className="inline-block text-xs font-bold text-indigo-400 hover:underline"
+                  >
+                    Enroll via Course Catalog →
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
+                  {/* Queued Live & Scheduled Classes */}
+                  {liveSessions.concat(scheduledSessions).map(sess => (
+                    <div
+                      key={sess.id}
+                      onClick={() => {
+                        setActiveTopic(null);
+                        setActiveSession(sess);
+                      }}
+                      className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                        activeSession?.id === sess.id && !activeTopic
+                          ? "bg-indigo-600/20 border-indigo-500"
+                          : "bg-[#13131A] border-white/10 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-black uppercase text-indigo-400">
+                          {sess.subjectName} • Prof. {sess.teacherName}
+                        </span>
+                        <span
+                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            sess.status === "LIVE"
+                              ? "bg-rose-500 text-white"
+                              : "bg-amber-500/20 text-amber-300"
+                          }`}
+                        >
+                          {sess.status}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-white">{sess.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {new Date(sess.scheduledAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+
+                  {/* Enrolled Curriculum Modules & Topics */}
+                  {filteredModules.length === 0 &&
+                  liveSessions.length === 0 &&
+                  scheduledSessions.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-[#13131A] border border-white/5 text-center space-y-2">
+                      <p className="text-xs font-bold text-slate-400">
+                        No VOD modules or live classes published for this subject yet.
+                      </p>
+                      <Link
+                        href="/dashboard/curriculum"
+                        className="inline-block text-xs font-bold text-indigo-400 hover:underline"
+                      >
+                        Check Subject Curriculum →
+                      </Link>
+                    </div>
+                  ) : (
+                    filteredModules.map(mod => (
+                      <div
+                        key={mod.id}
+                        className="p-4 rounded-2xl bg-[#13131A] border border-white/10 space-y-2.5"
+                      >
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-emerald-400">
+                            {mod.subjectName} • Prof. {mod.teacherName}
+                          </span>
+                          <h4 className="text-xs font-black text-white mt-0.5">
+                            {mod.title}
+                          </h4>
+                        </div>
+
+                        {mod.topics?.length === 0 ? (
+                          <p className="text-[11px] text-slate-500 italic">
+                            No topic files uploaded yet.
+                          </p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {mod.topics.map((t: any) => (
+                              <button
+                                key={t.id}
+                                onClick={() =>
+                                  setActiveTopic({
+                                    ...t,
+                                    subjectName: mod.subjectName
+                                  })
+                                }
+                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                                  activeTopic?.id === t.id
+                                    ? "bg-indigo-600 text-white"
+                                    : "bg-white/5 text-slate-300 hover:bg-white/10"
+                                }`}
+                              >
+                                <span className="truncate">{t.title}</span>
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-black/30 shrink-0 ml-2">
+                                  {t.contentType}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            <Link
+              href="/dashboard/forum"
+              className="w-full py-3.5 rounded-2xl bg-[#252532] hover:bg-[#2E2E3E] border border-white/10 text-center text-xs font-bold text-indigo-300 transition-all"
+            >
+              Ask a Doubt in Course Hubs
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

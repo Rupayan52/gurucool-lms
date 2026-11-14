@@ -33,7 +33,7 @@ export default function CourseHubs() {
 
   const fetchCourses = async () => {
     const res = await fetch("/api/student/courses");
-    if (res.ok) setCourses(await res.json());
+    if (res.ok) { const data = await res.json(); setCourses(data); if (data.length > 0 && !activeView) { setActiveView({ type: 'HUB', id: data[0].id, name: data[0].name, teacherId: data[0].teacherId, teacherName: data[0].teacherName }); } }
   };
 
   const fetchMessages = async () => {
@@ -93,11 +93,11 @@ export default function CourseHubs() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]); };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto min-h-[calc(100vh-110px)] lg:h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
       <div className="mb-6 flex-shrink-0"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Hubs</h1></div>
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-        <div className="w-full lg:w-72 flex-shrink-0 flex flex-row lg:flex-col gap-4 lg:gap-6 overflow-x-auto lg:overflow-x-visible overflow-y-hidden lg:overflow-y-auto pb-4 lg:pb-0 pr-2 hide-scrollbar">
+        <div className="w-full lg:w-[280px] flex-shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 lg:gap-6 overflow-x-auto lg:overflow-y-auto pb-2 lg:pb-0 pr-0 lg:pr-2">
           
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 min-w-[240px]">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Group Hubs</h3></div>
