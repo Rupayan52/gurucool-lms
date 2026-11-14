@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="rainbowRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF1E56"/>
+      <stop offset="20%" stop-color="#FF9F1C"/>
+      <stop offset="40%" stop-color="#FFEA00"/>
+      <stop offset="60%" stop-color="#00E676"/>
+      <stop offset="80%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#D500F9"/>
+    </linearGradient>
+    <linearGradient id="cyberGat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6A11CB"/>
+      <stop offset="50%" stop-color="#2575FC"/>
+      <stop offset="100%" stop-color="#00D2FF"/>
+    </linearGradient>
+    <linearGradient id="silverMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#CFD8DC"/>
+      <stop offset="100%" stop-color="#607D8B"/>
+    </linearGradient>
+    <linearGradient id="guruGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF512F"/>
+      <stop offset="30%" stop-color="#FFD200"/>
+      <stop offset="55%" stop-color="#00E676"/>
+      <stop offset="80%" stop-color="#00B0FF"/>
+      <stop offset="100%" stop-color="#FF2A85"/>
+    </linearGradient>
+    <filter id="heavyShadow" x="-12%" y="-12%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#090D16" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- White Circular Badge Base & Rainbow Outer Ring -->
+  <circle cx="512" cy="512" r="496" fill="#FFFFFF" stroke="url(#rainbowRing)" stroke-width="24"/>
+  <circle cx="512" cy="512" r="470" fill="none" stroke="#F1F5F9" stroke-width="4"/>
+
+  <!-- Top GAT Cyber Monogram -->
+  <g filter="url(#heavyShadow)" transform="translate(0, -10)">
+    <path d="M 555 135 A 135 135 0 1 0 555 365 L 555 305 L 495 305 L 495 268 L 605 268 L 605 385 A 178 178 0 1 1 588 100 Z"
+          fill="url(#cyberGat)" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="485" cy="245" r="52" fill="#FFFFFF" stroke="url(#cyberGat)" stroke-width="14"/>
+    <path d="M 455 385 L 535 245 L 610 385 L 568 385 L 535 320 L 498 385 Z"
+          fill="#0F172A" stroke="url(#silverMetal)" stroke-width="6"/>
+    <path d="M 548 230 L 682 230 L 666 266 L 630 266 L 630 385 L 590 385 L 590 266 L 548 266 Z"
+          fill="url(#silverMetal)" stroke="#0F172A" stroke-width="5"/>
+    <!-- Dynamic Energy Slash -->
+    <path d="M 355 395 L 675 95 L 505 285 Z" fill="#00E5FF" opacity="0.9"/>
+  </g>
+
+  <!-- Decorative Icons: Lightbulb (Left), Paper Plane, Open Book & Rocket (Right) -->
+  <g transform="translate(225, 235) rotate(-18)">
+    <circle cx="0" cy="0" r="38" fill="#FFD600" stroke="#F57F17" stroke-width="5"/>
+    <rect x="-16" y="34" width="32" height="18" rx="5" fill="#78909C"/>
+  </g>
+  <polygon points="105,345 175,315 148,378 132,352" fill="#00B0FF"/>
+  <g transform="translate(785, 265) rotate(12)">
+    <rect x="-52" y="-36" width="50" height="68" rx="6" fill="#FFFFFF" stroke="#311B92" stroke-width="6"/>
+    <rect x="-2" y="-36" width="50" height="68" rx="6" fill="#FFFFFF" stroke="#311B92" stroke-width="6"/>
+  </g>
+  <g transform="translate(860, 380) rotate(35)">
+    <ellipse cx="0" cy="0" rx="22" ry="46" fill="#FFFFFF" stroke="#1E293B" stroke-width="6"/>
+    <path d="M -22 15 L -38 38 L -14 32 Z" fill="#FF3D00"/>
+    <path d="M 22 15 L 38 38 L 14 32 Z" fill="#FF3D00"/>
+    <circle cx="0" cy="-8" r="10" fill="#00B0FF" stroke="#1E293B" stroke-width="4"/>
+  </g>
+
+  <!-- Banner 1: BACHHON KI -->
+  <rect x="242" y="388" width="540" height="64" rx="32" fill="#1A103C" filter="url(#heavyShadow)"/>
+  <text x="512" y="432" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="42" font-weight="900" fill="#FFFFFF" letter-spacing="4">
+    BACHHON KI
+  </text>
+
+  <!-- Banner 2: NAYI UDAAN -->
+  <rect x="138" y="446" width="748" height="96" rx="28" fill="#120B2E" filter="url(#heavyShadow)"/>
+  <text x="512" y="516" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="74" font-weight="900" letter-spacing="2">
+    <tspan fill="#FFD600">NAYI </tspan>
+    <tspan fill="#00E5FF">UDAAN</tspan>
+  </text>
+
+  <!-- Hero Title: GuruCool -->
+  <g filter="url(#heavyShadow)">
+    <text x="512" y="655" text-anchor="middle" font-family="Georgia, Arial Black, sans-serif" font-style="italic" font-size="152" font-weight="900" stroke="#140C30" stroke-width="26" paint-order="stroke" fill="url(#guruGrad)">
+      GuruCool
+    </text>
+  </g>
+
+  <!-- Subtitle Brush Banner: by GnOvATech -->
+  <rect x="210" y="684" width="604" height="68" rx="20" fill="#0B132B"/>
+  <text x="512" y="732" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="900" fill="#38BDF8" letter-spacing="2">
+    <tspan fill="#FFFFFF" font-style="italic">by </tspan>GnOvATech
+  </text>
+
+  <!-- 4 Pillar Badges: LEARN, FUN, GROW, THRIVE -->
+  <g transform="translate(0, 12)">
+    <!-- LEARN -->
+    <circle cx="285" cy="805" r="42" fill="#00B0FF"/>
+    <rect x="232" y="842" width="106" height="32" rx="16" fill="#0288D1"/>
+    <text x="285" y="864" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">LEARN</text>
+
+    <!-- FUN -->
+    <circle cx="436" cy="805" r="42" fill="#FF2A85"/>
+    <rect x="383" y="842" width="106" height="32" rx="16" fill="#C2185B"/>
+    <text x="436" y="864" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">FUN</text>
+
+    <!-- GROW -->
+    <circle cx="588" cy="805" r="42" fill="#00E676"/>
+    <rect x="535" y="842" width="106" height="32" rx="16" fill="#2E7D32"/>
+    <text x="588" y="864" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">GROW</text>
+
+    <!-- THRIVE -->
+    <circle cx="739" cy="805" r="42" fill="#FF9100"/>
+    <rect x="686" y="842" width="106" height="32" rx="16" fill="#E65100"/>
+    <text x="739" y="864" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">THRIVE</text>
+  </g>
+
+  <!-- Bottom Motto -->
+  <text x="512" y="938" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="30" font-weight="900" fill="#0F172A">
+    Padhai Se Aage, Udaan Ki Ore.
+  </text>
+</svg>

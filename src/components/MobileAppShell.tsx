@@ -313,7 +313,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
           style={{ transform: `translate(-50%, ${pullDistance - 35}px)` }}
         >
           <img
-            src="/gnovatech-logo.svg"
+            src="/gurucool-logo.svg"
             alt="GAT"
             className={`gc-pull-logo ${pullDistance >= 70 ? "gc-spin" : ""}`}
           />
@@ -326,7 +326,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
       {/* BACK GUARD TOAST PILL */}
       {backToast && (
         <div className="gc-back-toast">
-          <img src="/gnovatech-logo.svg" alt="GAT" className="w-5 h-5 rounded-full" />
+          <img src="/gurucool-logo.svg" alt="GAT" className="w-5 h-5 rounded-full" />
           <span>{backToast}</span>
         </div>
       )}
@@ -382,7 +382,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
             }}
           >
             <img
-              src="/gnovatech-logo.svg"
+              src="/gurucool-logo.svg"
               alt="House of GnOvATech"
               className="gc-gat-avatar"
             />
@@ -418,7 +418,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
             <div className="gc-ios-sheet-header">
               <div className="flex items-center gap-3">
                 <img
-                  src="/gnovatech-logo.svg"
+                  src="/gurucool-logo.svg"
                   alt="House of GnOvATech"
                   className="w-12 h-12 rounded-2xl shadow-md border border-amber-400/40"
                 />
