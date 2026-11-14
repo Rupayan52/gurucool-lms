@@ -3,8 +3,7 @@ import crypto from "crypto";
 import { cookies, headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-// Derive a deterministic, high-entropy signing key if JWT_SECRET is not set in local dev
-function getSigningKey(): string {
+export function getSigningKey(): string {
   if (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 16) {
     return process.env.JWT_SECRET;
   }
@@ -12,7 +11,6 @@ function getSigningKey(): string {
   return crypto.createHash("sha256").update(seed).digest("hex");
 }
 
-// Sliding-Window In-Memory Rate Limiter (Per User/IP + Endpoint)
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 export function enforceRateLimit(
@@ -46,7 +44,6 @@ export function enforceRateLimit(
   };
 }
 
-// Recursive XSS & Script Injection Sanitizer
 export function sanitizeString(input: string, maxLength = 12000): string {
   if (typeof input !== "string") return "";
   return input
@@ -70,7 +67,6 @@ export function sanitizePayload<T>(payload: T): T {
   if (payload && typeof payload === "object") {
     const cleaned: Record<string, any> = {};
     for (const [k, v] of Object.entries(payload as Record<string, any>)) {
-      // Never corrupt base64 data URLs while sanitizing text fields
       if (
         (k.toLowerCase().includes("url") || k.toLowerCase().includes("avatar")) &&
         typeof v === "string" &&
@@ -86,7 +82,6 @@ export function sanitizePayload<T>(payload: T): T {
   return payload;
 }
 
-// Base64 File Upload MIME & Size Validator
 const ALLOWED_MIME_PREFIXES = [
   "data:image/png;base64,",
   "data:image/jpeg;base64,",
@@ -109,7 +104,6 @@ export function validateBase64Upload(
 ): { valid: boolean; reason?: string } {
   if (!dataUrl) return { valid: true };
   if (!dataUrl.startsWith("data:")) {
-    // Allow https:// links if validated
     if (dataUrl.startsWith("https://")) return { valid: true };
     return { valid: false, reason: "Invalid file encoding scheme." };
   }
@@ -145,20 +139,37 @@ export function validateBase64Upload(
   return { valid: true };
 }
 
-// Unified Role-Aware Session Authenticator
+// Supports both Native App Bearer Tokens AND Web Browser Cookies
 export async function verifySecureSession(preferredRole?: "TEACHER" | "STUDENT") {
-  const cookieStore = await cookies();
-  const teacherToken = cookieStore.get("token_teacher")?.value;
-  const studentToken = cookieStore.get("token_student")?.value;
-  const legacyToken = cookieStore.get("auth_token")?.value;
+  let token: string | undefined;
 
-  let token = legacyToken;
-  if (preferredRole === "TEACHER") {
-    token = teacherToken || legacyToken;
-  } else if (preferredRole === "STUDENT") {
-    token = studentToken || legacyToken;
-  } else {
-    token = teacherToken || studentToken || legacyToken;
+  // 1. Check Authorization: Bearer <token> header first (Mobile / Desktop App)
+  try {
+    const hdrs = await headers();
+    const authHeader = hdrs.get("authorization") || hdrs.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7).trim();
+    } else if (hdrs.get("x-auth-token")) {
+      token = hdrs.get("x-auth-token")?.trim();
+    }
+  } catch {
+    // Ignore header read errors in static contexts
+  }
+
+  // 2. Fallback to Browser Cookies (Website)
+  if (!token) {
+    const cookieStore = await cookies();
+    const teacherToken = cookieStore.get("token_teacher")?.value;
+    const studentToken = cookieStore.get("token_student")?.value;
+    const legacyToken = cookieStore.get("auth_token")?.value;
+
+    if (preferredRole === "TEACHER") {
+      token = teacherToken || legacyToken;
+    } else if (preferredRole === "STUDENT") {
+      token = studentToken || legacyToken;
+    } else {
+      token = teacherToken || studentToken || legacyToken;
+    }
   }
 
   if (!token) return null;

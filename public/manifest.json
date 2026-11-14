@@ -1,0 +1,10 @@
+{
+  "name": "GuruCool Phygital LMS",
+  "short_name": "GuruCool",
+  "description": "AI-Powered Learning Management System with BKT Telemetry, Live FFMUC Broadcasts, and Faculty Command Center",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary"
+}
