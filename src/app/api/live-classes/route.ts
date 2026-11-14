@@ -39,13 +39,17 @@ export async function GET(req: Request) {
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     if (roleParam === "TEACHER") {
-      // 1. Fetch teacher's registered subjects and their enrolled student counts
+      // 1. Fetch teacher's registered subjects + full enrolled student roster per subject
       const teacherRegs = await prisma.teacherRegistration.findMany({
         where: { teacherId: auth.userId },
         include: {
           subject: {
             include: {
-              registrations: { select: { studentId: true } }
+              registrations: {
+                include: {
+                  student: { select: { id: true, name: true, email: true, avatarUrl: true } }
+                }
+              }
             }
           }
         }
@@ -54,18 +58,22 @@ export async function GET(req: Request) {
       const subjects = teacherRegs.map(tr => ({
         id: tr.subject.id,
         name: tr.subject.name,
-        enrolledCount: tr.subject.registrations.length
+        enrolledCount: tr.subject.registrations.length,
+        students: tr.subject.registrations.map(r => r.student)
       }));
 
       const subjectIds = subjects.map(s => s.id);
-      const subjectMap = Object.fromEntries(subjects.map(s => [s.id, s.name]));
+      const subjectMap = Object.fromEntries(subjects.map(s => [s.id, s]));
 
-      // 2. Fetch curriculum modules so teacher can link a live class to a specific module
+      // 2. Fetch curriculum modules & topics so teacher can bind a live class to exact syllabus items
       const modules = await prisma.curriculumModule.findMany({
         where: { teacherId: auth.userId, subjectId: { in: subjectIds } },
+        include: { topics: { orderBy: { createdAt: "asc" } } },
         orderBy: { createdAt: "asc" }
       });
       const moduleMap = Object.fromEntries(modules.map(m => [m.id, m.title]));
+      const allTopics = modules.flatMap(m => m.topics);
+      const topicMap = Object.fromEntries(allTopics.map(t => [t.id, t.title]));
 
       // 3. Fetch live class sessions created by this teacher
       const sessionsWhere: any = { teacherId: auth.userId };
@@ -78,28 +86,40 @@ export async function GET(req: Request) {
         include: {
           attendances: { orderBy: { joinedAt: "desc" } }
         },
-        orderBy: { scheduledAt: "desc" }
+        orderBy: [{ isPinned: "desc" }, { scheduledAt: "desc" }]
       });
 
-      // Hydrate student names for attendance logs
       const attendeeIds = Array.from(
         new Set(rawSessions.flatMap(s => s.attendances.map(a => a.studentId)))
       );
-      const students = await prisma.user.findMany({
+      const attendeeUsers = await prisma.user.findMany({
         where: { id: { in: attendeeIds } },
         select: { id: true, name: true, email: true, avatarUrl: true }
       });
-      const studentMap = Object.fromEntries(students.map(st => [st.id, st]));
+      const studentMap = Object.fromEntries(attendeeUsers.map(st => [st.id, st]));
 
-      const sessions = rawSessions.map(s => ({
-        ...s,
-        subjectName: subjectMap[s.subjectId] || "Subject",
-        moduleTitle: s.moduleId ? moduleMap[s.moduleId] || null : null,
-        attendances: s.attendances.map(a => ({
-          ...a,
-          student: studentMap[a.studentId] || { id: a.studentId, name: "Student", email: "" }
-        }))
-      }));
+      const sessions = rawSessions.map(s => {
+        let parsedTargets: string[] = [];
+        try {
+          parsedTargets = s.targetStudentIds ? JSON.parse(s.targetStudentIds) : [];
+        } catch {
+          parsedTargets = [];
+        }
+
+        const subInfo = subjectMap[s.subjectId];
+        return {
+          ...s,
+          subjectName: subInfo?.name || "Subject",
+          enrolledStudents: subInfo?.students || [],
+          moduleTitle: s.moduleId ? moduleMap[s.moduleId] || null : null,
+          topicTitle: s.topicId ? topicMap[s.topicId] || null : null,
+          targetStudentIdsList: parsedTargets,
+          attendances: s.attendances.map(a => ({
+            ...a,
+            student: studentMap[a.studentId] || { id: a.studentId, name: "Student", email: "" }
+          }))
+        };
+      });
 
       return NextResponse.json({
         subjects,
@@ -146,7 +166,6 @@ export async function GET(req: Request) {
         registrations.map(r => [r.subject.id, r.subject.name])
       );
 
-      // Fetch all LiveClassSessions for the student's enrolled subjects
       const sessionWhere: any = {
         subjectId: {
           in:
@@ -159,10 +178,8 @@ export async function GET(req: Request) {
       const [rawSessions, modules] = await Promise.all([
         prisma.liveClassSession.findMany({
           where: sessionWhere,
-          include: {
-            attendances: true
-          },
-          orderBy: { scheduledAt: "desc" }
+          include: { attendances: true },
+          orderBy: [{ isPinned: "desc" }, { scheduledAt: "desc" }]
         }),
         prisma.curriculumModule.findMany({
           where: {
@@ -173,16 +190,26 @@ export async function GET(req: Request) {
                   : enrolledSubjectIds
             }
           },
-          include: {
-            topics: { orderBy: { createdAt: "asc" } }
-          },
+          include: { topics: { orderBy: { createdAt: "asc" } } },
           orderBy: { createdAt: "asc" }
         })
       ]);
 
+      // Filter sessions so student only sees classes assigned to the whole course OR specifically targeting them
+      const visibleSessions = rawSessions.filter(s => {
+        if (!s.targetStudentIds) return true;
+        try {
+          const arr = JSON.parse(s.targetStudentIds);
+          if (!Array.isArray(arr) || arr.length === 0) return true;
+          return arr.includes(auth.userId);
+        } catch {
+          return true;
+        }
+      });
+
       const teacherIds = Array.from(
         new Set([
-          ...rawSessions.map(s => s.teacherId),
+          ...visibleSessions.map(s => s.teacherId),
           ...modules.map(m => m.teacherId)
         ])
       );
@@ -192,16 +219,30 @@ export async function GET(req: Request) {
       });
       const teacherMap = Object.fromEntries(teachers.map(t => [t.id, t]));
       const moduleMap = Object.fromEntries(modules.map(m => [m.id, m.title]));
+      const allTopics = modules.flatMap(m => m.topics);
+      const topicMap = Object.fromEntries(allTopics.map(t => [t.id, t.title]));
 
-      const sessions = rawSessions.map(s => ({
-        ...s,
-        subjectName: subjectNameMap[s.subjectId] || "Subject",
-        teacherName: teacherMap[s.teacherId]?.name || "Faculty",
-        teacherAvatar: teacherMap[s.teacherId]?.avatarUrl || null,
-        moduleTitle: s.moduleId ? moduleMap[s.moduleId] || null : null,
-        attendeeCount: s.attendances.length,
-        hasJoined: s.attendances.some(a => a.studentId === auth.userId)
-      }));
+      const sessions = visibleSessions.map(s => {
+        let isTargetedToMeOnly = false;
+        try {
+          const arr = s.targetStudentIds ? JSON.parse(s.targetStudentIds) : [];
+          isTargetedToMeOnly = Array.isArray(arr) && arr.length > 0 && arr.includes(auth.userId);
+        } catch {
+          isTargetedToMeOnly = false;
+        }
+
+        return {
+          ...s,
+          subjectName: subjectNameMap[s.subjectId] || "Subject",
+          teacherName: teacherMap[s.teacherId]?.name || "Faculty",
+          teacherAvatar: teacherMap[s.teacherId]?.avatarUrl || null,
+          moduleTitle: s.moduleId ? moduleMap[s.moduleId] || null : null,
+          topicTitle: s.topicId ? topicMap[s.topicId] || null : null,
+          attendeeCount: s.attendances.length,
+          hasJoined: s.attendances.some(a => a.studentId === auth.userId),
+          isTargetedToMeOnly
+        };
+      });
 
       const learningQueueModules = modules.map(m => ({
         ...m,
@@ -232,8 +273,17 @@ export async function POST(req: Request) {
       const {
         subjectId,
         moduleId,
+        topicId,
         title,
         agenda,
+        teacherDirective,
+        targetStudentIds,
+        isMandatory,
+        isPinned,
+        isRoomLocked,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
         scheduledAt,
         durationMinutes,
         startImmediately
@@ -251,13 +301,33 @@ export async function POST(req: Request) {
       const uniqueCode = `${cleanSub}_${Date.now().toString(36)}`;
       const streamUrl = `https://meet.ffmuc.net/GuruCool_Live_${uniqueCode}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`;
 
+      // If teacher pins this session, unpin older sessions for the same subject so student view is unambiguous
+      if (isPinned || startImmediately) {
+        await prisma.liveClassSession.updateMany({
+          where: { subjectId, teacherId: auth.userId },
+          data: { isPinned: false }
+        });
+      }
+
       const session = await prisma.liveClassSession.create({
         data: {
           subjectId,
           teacherId: auth.userId,
           moduleId: moduleId || null,
+          topicId: topicId || null,
           title: title.trim(),
           agenda: agenda?.trim() || null,
+          teacherDirective: teacherDirective?.trim() || null,
+          targetStudentIds:
+            Array.isArray(targetStudentIds) && targetStudentIds.length > 0
+              ? JSON.stringify(targetStudentIds)
+              : null,
+          isMandatory: isMandatory !== undefined ? Boolean(isMandatory) : true,
+          isPinned: startImmediately ? true : Boolean(isPinned),
+          isRoomLocked: startImmediately ? false : Boolean(isRoomLocked),
+          attachmentUrl: attachmentUrl || null,
+          attachmentName: attachmentName || null,
+          attachmentType: attachmentType || null,
           scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
           durationMinutes: Number(durationMinutes) || 60,
           status: startImmediately ? "LIVE" : "SCHEDULED",
@@ -270,15 +340,75 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, session });
     }
 
+    if (action === "UPDATE_CONTROLS") {
+      const auth = await getAuth("TEACHER");
+      if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+      const {
+        sessionId,
+        isPinned,
+        isRoomLocked,
+        isMandatory,
+        teacherDirective,
+        scheduledAt,
+        durationMinutes,
+        vodUrl,
+        recordingNotes
+      } = body;
+
+      const existing = await prisma.liveClassSession.findUnique({
+        where: { id: sessionId }
+      });
+      if (!existing || existing.teacherId !== auth.userId) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+
+      if (isPinned === true) {
+        await prisma.liveClassSession.updateMany({
+          where: { subjectId: existing.subjectId, teacherId: auth.userId },
+          data: { isPinned: false }
+        });
+      }
+
+      const updated = await prisma.liveClassSession.update({
+        where: { id: sessionId },
+        data: {
+          ...(isPinned !== undefined && { isPinned: Boolean(isPinned) }),
+          ...(isRoomLocked !== undefined && { isRoomLocked: Boolean(isRoomLocked) }),
+          ...(isMandatory !== undefined && { isMandatory: Boolean(isMandatory) }),
+          ...(teacherDirective !== undefined && { teacherDirective }),
+          ...(scheduledAt !== undefined && { scheduledAt: new Date(scheduledAt) }),
+          ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
+          ...(vodUrl !== undefined && { vodUrl }),
+          ...(recordingNotes !== undefined && { recordingNotes })
+        }
+      });
+
+      return NextResponse.json({ success: true, session: updated });
+    }
+
     if (action === "START_LIVE") {
       const auth = await getAuth("TEACHER");
       if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
       const { sessionId } = body;
+      const existing = await prisma.liveClassSession.findUnique({ where: { id: sessionId } });
+      if (!existing || existing.teacherId !== auth.userId) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+
+      // Automatically spotlight on student stage and unlock room doors when teacher starts live
+      await prisma.liveClassSession.updateMany({
+        where: { subjectId: existing.subjectId, teacherId: auth.userId },
+        data: { isPinned: false }
+      });
+
       const updated = await prisma.liveClassSession.update({
-        where: { id: sessionId, teacherId: auth.userId },
+        where: { id: sessionId },
         data: {
           status: "LIVE",
+          isPinned: true,
+          isRoomLocked: false,
           startedAt: new Date()
         }
       });
@@ -290,13 +420,15 @@ export async function POST(req: Request) {
       const auth = await getAuth("TEACHER");
       if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-      const { sessionId, recordingNotes } = body;
+      const { sessionId, recordingNotes, vodUrl } = body;
       const updated = await prisma.liveClassSession.update({
         where: { id: sessionId, teacherId: auth.userId },
         data: {
           status: "COMPLETED",
+          isRoomLocked: true,
           endedAt: new Date(),
-          ...(recordingNotes !== undefined && { recordingNotes })
+          ...(recordingNotes !== undefined && { recordingNotes }),
+          ...(vodUrl !== undefined && { vodUrl })
         }
       });
 
@@ -324,6 +456,12 @@ export async function POST(req: Request) {
       });
       if (!session) {
         return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      }
+      if (session.isRoomLocked) {
+        return NextResponse.json(
+          { error: "Room is currently locked by faculty." },
+          { status: 403 }
+        );
       }
 
       await prisma.liveClassAttendance.upsert({

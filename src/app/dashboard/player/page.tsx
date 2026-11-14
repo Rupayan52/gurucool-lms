@@ -14,7 +14,7 @@ export default function StudentLearningPlayerCenter() {
 
   useEffect(() => {
     fetchPlayerState();
-    const interval = setInterval(fetchPlayerState, 8000);
+    const interval = setInterval(fetchPlayerState, 6000);
     return () => clearInterval(interval);
   }, []);
 
@@ -28,15 +28,22 @@ export default function StudentLearningPlayerCenter() {
         setSessions(sessionList);
         setQueueModules(data.learningQueueModules || []);
 
-        // Automatically spotlight an active LIVE broadcast or the next SCHEDULED broadcast
-        if (!activeSession && !activeTopic && sessionList.length > 0) {
-          const liveNow = sessionList.find((s: any) => s.status === "LIVE");
-          const nextScheduled = sessionList.find((s: any) => s.status === "SCHEDULED");
-          setActiveSession(liveNow || nextScheduled || sessionList[0]);
-        } else if (activeSession) {
-          const refreshed = sessionList.find((s: any) => s.id === activeSession.id);
-          if (refreshed) setActiveSession(refreshed);
-        }
+        // Prioritize whatever the Teacher has Pinned/Spotlighted or set LIVE
+        const teacherPinnedLive = sessionList.find(
+          (s: any) => s.isPinned && s.status === "LIVE"
+        );
+        const anyLive = sessionList.find((s: any) => s.status === "LIVE");
+        const teacherPinnedAny = sessionList.find((s: any) => s.isPinned);
+        const nextScheduled = sessionList.find((s: any) => s.status === "SCHEDULED");
+
+        const intendedDefault =
+          teacherPinnedLive || anyLive || teacherPinnedAny || nextScheduled || sessionList[0] || null;
+
+        setActiveSession((prev: any) => {
+          if (!prev) return intendedDefault;
+          const updated = sessionList.find((s: any) => s.id === prev.id);
+          return updated || intendedDefault;
+        });
       }
     } catch (e) {
       console.error(e);
@@ -52,26 +59,29 @@ export default function StudentLearningPlayerCenter() {
       sessions.find(s => s.status === "LIVE") ||
       sessions.find(s => s.status === "SCHEDULED");
 
-    if (target) {
-      // Open FFMUC Live Room in a NEW TAB immediately so popup blockers never interfere
-      window.open(target.streamUrl, "_blank", "noopener,noreferrer");
-
-      await fetch("/api/live-classes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "JOIN_SESSION", sessionId: target.id })
-      });
-      await fetchPlayerState();
-    } else if (cohorts.length > 0) {
-      // Fallback: Open the student's subject-specific room in a new tab
-      const activeSub =
-        cohorts.find(c => c.subjectId === selectedSubjectId) || cohorts[0];
-      const cleanName = activeSub.subjectName.replace(/[^a-zA-Z0-9]/g, "");
-      const fallbackUrl = `https://meet.ffmuc.net/GuruCool_Subject_${cleanName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=true`;
-      window.open(fallbackUrl, "_blank", "noopener,noreferrer");
-    } else {
-      alert("Please enroll in a subject via the Course Catalog first.");
+    if (!target) {
+      alert("No active or scheduled class selected.");
+      return;
     }
+
+    if (target.isRoomLocked) {
+      alert(
+        `Prof. ${target.teacherName} has locked the room doors until class begins. Please wait for faculty to unlock.`
+      );
+      return;
+    }
+
+    const launchUrl =
+      target.status === "COMPLETED" && target.vodUrl ? target.vodUrl : target.streamUrl;
+
+    window.open(launchUrl, "_blank", "noopener,noreferrer");
+
+    await fetch("/api/live-classes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "JOIN_SESSION", sessionId: target.id })
+    });
+    await fetchPlayerState();
   };
 
   if (loading) {
@@ -88,88 +98,72 @@ export default function StudentLearningPlayerCenter() {
   const filteredModules = queueModules.filter(m =>
     selectedSubjectId === "ALL" ? true : m.subjectId === selectedSubjectId
   );
-
-  const liveSessions = filteredSessions.filter(s => s.status === "LIVE");
-  const scheduledSessions = filteredSessions.filter(s => s.status === "SCHEDULED");
-
-  // Unique subjects from enrolled cohorts
   const uniqueSubjects = Array.from(
     new Map(cohorts.map(c => [c.subjectId, c])).values()
   );
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
-      {/* TOP BAR MATCHING SCREENSHOT 2 */}
+      {/* TOP HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-black uppercase tracking-widest text-indigo-400">
-            PHYGITAL CLASSROOM • FFMUC STREAM ENGINE
+            PHYGITAL CLASSROOM • FACULTY-DIRECTED STREAM ENGINE
           </p>
-          <div className="flex items-center gap-3 mt-1">
-            <h1 className="text-3xl font-black text-white tracking-tight">
-              My Learning Player
-            </h1>
-            {liveSessions.length > 0 && (
-              <span className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                {liveSessions.length} Live Broadcast Active
-              </span>
-            )}
-          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight mt-1">
+            My Learning Player
+          </h1>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <Link
             href="/dashboard"
-            className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] border border-white/10 text-slate-200 font-bold text-xs transition-all"
+            className="px-4 py-2.5 rounded-xl bg-[#1C1C24] hover:bg-[#252530] border border-white/10 text-slate-200 font-bold text-xs"
           >
             ← Back to AI Insights
           </Link>
-          <button
-            onClick={() => handleJoinBroadcast()}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition-all"
-          >
-            POP-OUT LIVE STREAM ↗
-          </button>
+          {activeSession && !activeSession.isRoomLocked && (
+            <button
+              onClick={() => handleJoinBroadcast(activeSession)}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30"
+            >
+              POP-OUT LIVE STREAM ↗
+            </button>
+          )}
         </div>
       </div>
 
-      {/* SUBJECT-SPECIFIC FILTER BAR */}
+      {/* COURSE FILTER BAR */}
       {uniqueSubjects.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap bg-[#1C1C24] p-2.5 rounded-2xl border border-white/10">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">
-            Filter by Enrolled Subject:
+            Enrolled Courses:
           </span>
           <button
             onClick={() => setSelectedSubjectId("ALL")}
             className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedSubjectId === "ALL"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
+                ? "bg-indigo-600 text-white"
+                : "text-slate-400 hover:text-white"
             }`}
           >
-            All Enrolled Subjects
+            All Courses ({sessions.length})
           </button>
           {uniqueSubjects.map((sub: any) => (
             <button
               key={sub.subjectId}
               onClick={() => {
                 setSelectedSubjectId(sub.subjectId);
-                const subLive = sessions.find(
-                  s => s.subjectId === sub.subjectId && s.status === "LIVE"
-                );
-                const subSched = sessions.find(
-                  s => s.subjectId === sub.subjectId && s.status === "SCHEDULED"
-                );
-                if (subLive || subSched) {
+                const subSession = sessions.find(s => s.subjectId === sub.subjectId);
+                if (subSession) {
                   setActiveTopic(null);
-                  setActiveSession(subLive || subSched);
+                  setActiveSession(subSession);
                 }
               }}
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 selectedSubjectId === sub.subjectId
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               {sub.subjectName} (Prof. {sub.teacherName})
@@ -178,65 +172,48 @@ export default function StudentLearningPlayerCenter() {
         </div>
       )}
 
-      {/* MAIN 12-COLUMN PLAYER & ACTIVE LEARNING QUEUE GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* LEFT 8 COLUMNS: PRIMARY BROADCAST & VOD STAGE */}
+        {/* LEFT 8 COLUMNS: FACULTY-INTENDED STAGE */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className="bg-black rounded-[32px] border border-white/10 p-8 sm:p-12 min-h-[460px] flex flex-col items-center justify-center text-center relative overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/20 via-transparent to-black pointer-events-none" />
+          <div className="bg-black rounded-[32px] border border-white/10 p-8 sm:p-10 min-h-[470px] flex flex-col items-center justify-center text-center relative overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/25 via-transparent to-black pointer-events-none" />
 
             {activeTopic ? (
-              /* SELECTED CURRICULUM TOPIC VIEW */
               <div className="relative z-10 max-w-xl space-y-5">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase">
-                    {activeTopic.subjectName} • {activeTopic.contentType}
-                  </span>
-                </div>
+                <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase">
+                  {activeTopic.subjectName} • {activeTopic.contentType}
+                </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-white">
                   {activeTopic.title}
                 </h2>
                 {activeTopic.bodyText && (
-                  <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed bg-white/5 p-5 rounded-2xl border border-white/10 text-left max-h-56 overflow-y-auto">
+                  <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap bg-white/5 p-5 rounded-2xl border border-white/10 text-left max-h-56 overflow-y-auto">
                     {activeTopic.bodyText}
                   </p>
                 )}
-                <div className="flex items-center justify-center gap-4 pt-2 flex-wrap">
+                <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
                   {activeTopic.fileUrl && (
                     <a
                       href={activeTopic.fileUrl}
-                      download={activeTopic.fileName || "lecture-material"}
+                      download={activeTopic.fileName || "resource"}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg"
+                      className="px-6 py-3.5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-wider"
                     >
-                      Open / Download Material ({activeTopic.fileName || activeTopic.contentType}) ↗
+                      Download Faculty File ({activeTopic.fileName || activeTopic.contentType}) ↗
                     </a>
                   )}
                   <button
                     onClick={() => setActiveTopic(null)}
-                    className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider"
+                    className="px-5 py-3.5 rounded-2xl bg-white/10 text-white font-bold text-xs"
                   >
-                    Return to Live Broadcast Stage
+                    Back to Live Class Stage
                   </button>
                 </div>
               </div>
             ) : activeSession ? (
-              /* SELECTED OR ACTIVE LIVE CLASS BROADCAST STAGE */
-              <div className="relative z-10 max-w-xl space-y-5">
-                <button
-                  onClick={() => handleJoinBroadcast(activeSession)}
-                  className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-transform hover:scale-105 shadow-2xl ${
-                    activeSession.status === "LIVE"
-                      ? "bg-rose-600 text-white shadow-rose-600/40"
-                      : "bg-indigo-600/30 border border-indigo-500/40 text-indigo-300"
-                  }`}
-                >
-                  <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-
+              <div className="relative z-10 max-w-2xl w-full space-y-5">
+                {/* Badges Showing Exact Faculty Configuration */}
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   {activeSession.status === "LIVE" ? (
                     <span className="px-3.5 py-1 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
@@ -249,94 +226,116 @@ export default function StudentLearningPlayerCenter() {
                     </span>
                   ) : (
                     <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-widest">
-                      COMPLETED SESSION
+                      COMPLETED LECTURE
                     </span>
                   )}
 
                   <span className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase">
                     {activeSession.subjectName} • Prof. {activeSession.teacherName}
                   </span>
+
+                  {activeSession.isMandatory && (
+                    <span className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-black uppercase">
+                      Mandatory Attendance
+                    </span>
+                  )}
+
+                  {activeSession.isTargetedToMeOnly && (
+                    <span className="px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[10px] font-black uppercase">
+                      Assigned Specifically to You
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-black text-white">
                   {activeSession.title}
                 </h2>
 
-                {activeSession.moduleTitle && (
+                {(activeSession.moduleTitle || activeSession.topicTitle) && (
                   <p className="text-xs font-bold text-indigo-400">
-                    Curriculum Module: {activeSession.moduleTitle}
+                    {activeSession.moduleTitle ? `Module: ${activeSession.moduleTitle}` : ""}
+                    {activeSession.topicTitle ? ` • Topic: ${activeSession.topicTitle}` : ""}
                   </p>
                 )}
 
-                <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-                  {activeSession.agenda ||
-                    "Click 'Join Active Broadcast' below to launch the subject-specific FFMUC video classroom in a new browser tab."}
-                </p>
+                {/* TEACHER DIRECTIVE BANNER */}
+                {activeSession.teacherDirective && (
+                  <div className="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-1">
+                      📌 Directive from Prof. {activeSession.teacherName}
+                    </p>
+                    <p className="text-xs sm:text-sm font-semibold text-white">
+                      {activeSession.teacherDirective}
+                    </p>
+                  </div>
+                )}
 
-                <div className="flex items-center justify-center gap-4 pt-3 flex-wrap">
-                  <button
-                    onClick={() => handleJoinBroadcast(activeSession)}
-                    className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition-all"
-                  >
-                    JOIN ACTIVE BROADCAST ↗
-                  </button>
-                  <Link
-                    href="/dashboard/curriculum"
-                    className="px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
-                  >
-                    OPEN SUBJECT SYLLABUS
-                  </Link>
+                {activeSession.agenda && (
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+                    {activeSession.agenda}
+                  </p>
+                )}
+
+                {/* COMPLETED POST-CLASS SUMMARY NOTES */}
+                {activeSession.status === "COMPLETED" && activeSession.recordingNotes && (
+                  <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">
+                      Post-Class Faculty Summary & Takeaways
+                    </p>
+                    <p className="text-xs text-slate-200 whitespace-pre-wrap">
+                      {activeSession.recordingNotes}
+                    </p>
+                  </div>
+                )}
+
+                {/* ACTION BUTTONS & PRE-CLASS ATTACHMENT */}
+                <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+                  {activeSession.isRoomLocked && activeSession.status !== "COMPLETED" ? (
+                    <div className="px-6 py-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-black text-xs uppercase tracking-wider">
+                      🔒 Waiting for Prof. {activeSession.teacherName} to Unlock Room Doors
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleJoinBroadcast(activeSession)}
+                      className="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition-all"
+                    >
+                      {activeSession.status === "COMPLETED" && activeSession.vodUrl
+                        ? "▶ WATCH RECORDED VOD IN NEW TAB ↗"
+                        : "🔴 JOIN ACTIVE BROADCAST IN NEW TAB ↗"}
+                    </button>
+                  )}
+
+                  {activeSession.attachmentUrl && (
+                    <a
+                      href={activeSession.attachmentUrl}
+                      download={activeSession.attachmentName || "class-material"}
+                      className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-xs"
+                    >
+                      📎 Download Class Material ({activeSession.attachmentName || "File"})
+                    </a>
+                  )}
                 </div>
               </div>
             ) : (
-              /* DEFAULT READY STATE WHEN NO SESSION IS SCHEDULED YET */
-              <div className="relative z-10 max-w-md space-y-5">
-                <button
-                  onClick={() => handleJoinBroadcast()}
-                  className="w-16 h-16 rounded-full bg-indigo-950/60 border border-indigo-500/30 text-indigo-400 mx-auto flex items-center justify-center hover:scale-105 transition-all"
-                >
-                  <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
+              <div className="relative z-10 max-w-md space-y-4">
                 <h2 className="text-xl sm:text-2xl font-black text-white">
-                  Ready for Live Broadcast or Recorded VOD
+                  No Live Broadcasts Assigned Yet
                 </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Select an enrolled module from the Active Learning Queue on the right or join your subject's active faculty broadcast room in a new tab.
+                <p className="text-xs text-slate-400">
+                  As soon as your course faculty assigns or starts a live class in their Command Center, their instructions, attachments, and stream link will appear right here.
                 </p>
-                <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
-                  <button
-                    onClick={() => handleJoinBroadcast()}
-                    className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30"
-                  >
-                    JOIN ACTIVE BROADCAST
-                  </button>
-                  <Link
-                    href="/dashboard/catalog"
-                    className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase tracking-wider"
-                  >
-                    BROWSE COURSE CATALOG
-                  </Link>
-                </div>
               </div>
             )}
           </div>
 
-          {/* SUBJECT-SPECIFIC LIVE & SCHEDULED SESSIONS LIST */}
+          {/* COURSE-SPECIFIC ASSIGNED LIVE CLASSES LIST */}
           <div className="bg-[#1C1C24] rounded-[28px] border border-white/10 p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-white">
-                Course-Specific Live Classes ({filteredSessions.length})
-              </h3>
-              <span className="text-[11px] font-bold text-slate-400">
-                Opens in New Tab • Auto-Logs Attendance
-              </span>
-            </div>
-
+            <h3 className="text-base font-black text-white">
+              Assigned Live Classes ({filteredSessions.length})
+            </h3>
             {filteredSessions.length === 0 ? (
               <p className="text-xs text-slate-400 py-4">
-                No live classes have been scheduled for this subject filter yet. When your faculty schedules or starts a class in their Command Center, it syncs here automatically.
+                No classes assigned for this course filter yet.
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -360,37 +359,32 @@ export default function StudentLearningPlayerCenter() {
                         </span>
                         {sess.status === "LIVE" ? (
                           <span className="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase">
-                            ● LIVE NOW
-                          </span>
-                        ) : sess.status === "SCHEDULED" ? (
-                          <span className="text-[10px] font-bold text-amber-400">
-                            {new Date(sess.scheduledAt).toLocaleDateString()}
+                            ● LIVE
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold text-emerald-400">
-                            Completed
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {new Date(sess.scheduledAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                       <h4 className="text-sm font-black text-white">{sess.title}</h4>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        Prof. {sess.teacherName} {sess.moduleTitle ? `• ${sess.moduleTitle}` : ""}
+                        Prof. {sess.teacherName}{" "}
+                        {sess.isMandatory ? "• Mandatory" : "• Enrichment"}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-white/5">
                       <span className="text-[10px] text-slate-400">
-                        {sess.hasJoined ? "✓ Attendance Logged" : `${sess.durationMinutes} mins`}
+                        {sess.isRoomLocked
+                          ? "🔒 Locked by Faculty"
+                          : sess.hasJoined
+                          ? "✓ Attendance Logged"
+                          : "🔓 Open"}
                       </span>
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleJoinBroadcast(sess);
-                        }}
-                        className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px]"
-                      >
-                        Launch Tab ↗
-                      </button>
+                      <span className="text-[11px] font-bold text-indigo-400">
+                        View Stage →
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -399,137 +393,57 @@ export default function StudentLearningPlayerCenter() {
           </div>
         </div>
 
-        {/* RIGHT 4 COLUMNS: ACTIVE LEARNING QUEUE (SYNCED WITH ENROLLED COURSES) */}
+        {/* RIGHT 4 COLUMNS: COURSE SYLLABUS & LEARNING QUEUE */}
         <div className="lg:col-span-4">
           <div className="bg-[#1C1C24] rounded-[32px] border border-white/10 p-6 flex flex-col justify-between h-full space-y-6">
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-black text-white">Active Learning Queue</h2>
+                <h2 className="text-lg font-black text-white">Course Learning Queue</h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Your real-time live broadcasts and subject modules synced directly with your enrolled courses.
+                  Faculty-assigned broadcasts and syllabus modules for your enrolled subjects.
                 </p>
               </div>
 
-              {cohorts.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-[#13131A] border border-white/5 text-center space-y-2">
-                  <p className="text-xs font-bold text-slate-400">
-                    No enrolled courses queued yet.
-                  </p>
-                  <Link
-                    href="/dashboard/catalog"
-                    className="inline-block text-xs font-bold text-indigo-400 hover:underline"
+              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                {filteredModules.map(mod => (
+                  <div
+                    key={mod.id}
+                    className="p-4 rounded-2xl bg-[#13131A] border border-white/10 space-y-2"
                   >
-                    Enroll via Course Catalog →
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-[520px] overflow-y-auto pr-1">
-                  {/* Queued Live & Scheduled Classes */}
-                  {liveSessions.concat(scheduledSessions).map(sess => (
-                    <div
-                      key={sess.id}
-                      onClick={() => {
-                        setActiveTopic(null);
-                        setActiveSession(sess);
-                      }}
-                      className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                        activeSession?.id === sess.id && !activeTopic
-                          ? "bg-indigo-600/20 border-indigo-500"
-                          : "bg-[#13131A] border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black uppercase text-indigo-400">
-                          {sess.subjectName} • Prof. {sess.teacherName}
-                        </span>
-                        <span
-                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            sess.status === "LIVE"
-                              ? "bg-rose-500 text-white"
-                              : "bg-amber-500/20 text-amber-300"
+                    <span className="text-[10px] font-black uppercase text-emerald-400">
+                      {mod.subjectName} • Prof. {mod.teacherName}
+                    </span>
+                    <h4 className="text-xs font-black text-white">{mod.title}</h4>
+                    <div className="space-y-1.5 pt-1">
+                      {(mod.topics || []).map((t: any) => (
+                        <button
+                          key={t.id}
+                          onClick={() =>
+                            setActiveTopic({ ...t, subjectName: mod.subjectName })
+                          }
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between ${
+                            activeTopic?.id === t.id
+                              ? "bg-indigo-600 text-white"
+                              : "bg-white/5 text-slate-300 hover:bg-white/10"
                           }`}
                         >
-                          {sess.status}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-white">{sess.title}</p>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        {new Date(sess.scheduledAt).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-
-                  {/* Enrolled Curriculum Modules & Topics */}
-                  {filteredModules.length === 0 &&
-                  liveSessions.length === 0 &&
-                  scheduledSessions.length === 0 ? (
-                    <div className="p-6 rounded-2xl bg-[#13131A] border border-white/5 text-center space-y-2">
-                      <p className="text-xs font-bold text-slate-400">
-                        No VOD modules or live classes published for this subject yet.
-                      </p>
-                      <Link
-                        href="/dashboard/curriculum"
-                        className="inline-block text-xs font-bold text-indigo-400 hover:underline"
-                      >
-                        Check Subject Curriculum →
-                      </Link>
-                    </div>
-                  ) : (
-                    filteredModules.map(mod => (
-                      <div
-                        key={mod.id}
-                        className="p-4 rounded-2xl bg-[#13131A] border border-white/10 space-y-2.5"
-                      >
-                        <div>
-                          <span className="text-[10px] font-black uppercase text-emerald-400">
-                            {mod.subjectName} • Prof. {mod.teacherName}
+                          <span className="truncate">{t.title}</span>
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-black/30">
+                            {t.contentType}
                           </span>
-                          <h4 className="text-xs font-black text-white mt-0.5">
-                            {mod.title}
-                          </h4>
-                        </div>
-
-                        {mod.topics?.length === 0 ? (
-                          <p className="text-[11px] text-slate-500 italic">
-                            No topic files uploaded yet.
-                          </p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {mod.topics.map((t: any) => (
-                              <button
-                                key={t.id}
-                                onClick={() =>
-                                  setActiveTopic({
-                                    ...t,
-                                    subjectName: mod.subjectName
-                                  })
-                                }
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                                  activeTopic?.id === t.id
-                                    ? "bg-indigo-600 text-white"
-                                    : "bg-white/5 text-slate-300 hover:bg-white/10"
-                                }`}
-                              >
-                                <span className="truncate">{t.title}</span>
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-black/30 shrink-0 ml-2">
-                                  {t.contentType}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <Link
-              href="/dashboard/forum"
+              href="/dashboard/doubts"
               className="w-full py-3.5 rounded-2xl bg-[#252532] hover:bg-[#2E2E3E] border border-white/10 text-center text-xs font-bold text-indigo-300 transition-all"
             >
-              Ask a Doubt in Course Hubs
+              Ask Faculty a Doubt
             </Link>
           </div>
         </div>
