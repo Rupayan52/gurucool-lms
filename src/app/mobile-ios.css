@@ -40,7 +40,6 @@ button:active, a:active, [role="button"]:active {
     -webkit-overflow-scrolling: touch !important;
   }
 
-  /* Unlock full page scrolling */
   div.h-screen:not(.fixed),
   div.max-h-screen:not(.fixed),
   main.overflow-y-auto,
@@ -51,8 +50,10 @@ button:active, a:active, [role="button"]:active {
     overflow-y: visible !important;
   }
 
-  /* ONLY hide outer navigation <aside>, NEVER inner page div.w-72 lists! */
-  aside {
+  /* Hide desktop navigation sidebars & desktop search topbars on mobile */
+  aside,
+  [data-desktop-topbar="true"],
+  [data-desktop-sidebar="true"] {
     display: none !important;
   }
 
@@ -61,8 +62,8 @@ button:active, a:active, [role="button"]:active {
   }
 
   .gc-mobile-shell-active {
-    padding-top: 38px !important;
-    padding-bottom: 84px !important;
+    padding-top: 42px !important;
+    padding-bottom: 92px !important;
     min-height: 100dvh !important;
   }
 
@@ -71,16 +72,16 @@ button:active, a:active, [role="button"]:active {
   .gc-mobile-shell-active .lg\:p-10,
   .gc-mobile-shell-active .p-8 {
     padding: 12px !important;
+    border-left: none !important;
   }
 }
 
-/* Ultra-subtle, low-profile top strip (no bulky buttons) */
 .gc-ios-topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 36px;
+  height: 40px;
   z-index: 8000;
   display: flex;
   align-items: center;
@@ -91,15 +92,15 @@ button:active, a:active, [role="button"]:active {
 }
 
 .gc-ios-topbar-dark {
-  background: rgba(11, 15, 25, 0.78);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
+  background: rgba(11, 15, 25, 0.88);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: #e2e8f0;
 }
 
 .gc-ios-topbar-light {
-  background: rgba(248, 250, 252, 0.85);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  color: #475569;
+  background: rgba(248, 250, 252, 0.9);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  color: #334155;
 }
 
 .gc-back-toast {
@@ -135,12 +136,12 @@ button:active, a:active, [role="button"]:active {
 }
 
 .gc-ios-tabbar-dark {
-  background: rgba(15, 19, 30, 0.92);
+  background: rgba(15, 19, 30, 0.94);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gc-ios-tabbar-light {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.95);
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.05);
 }

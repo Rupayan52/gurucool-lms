@@ -213,14 +213,14 @@ export default function StudentProfileDossierPage() {
     BANNER_THEMES[bannerTheme]?.classes || BANNER_THEMES.INDIGO_CYBER.classes;
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-24">
+    <div className="p-3 sm:p-6 lg:p-10 max-w-7xl mx-auto pb-28 space-y-6">
       {/* ================================================================= */}
       {/* HERO BANNER, AVATAR UPLOAD & LIVE COMPLETENESS METER              */}
       {/* ================================================================= */}
       <div className="bg-[#1C1C24] rounded-[32px] border border-white/10 overflow-hidden shadow-2xl">
         {/* Customizable Gradient Cover */}
         <div className={`h-44 bg-gradient-to-r ${activeBannerClass} relative p-6 flex justify-between items-start`}>
-          <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10">
+          <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 max-w-full overflow-x-auto hide-scrollbar flex-wrap sm:flex-nowrap">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
                 availability === "Available"
@@ -234,7 +234,7 @@ export default function StudentProfileDossierPage() {
           </div>
 
           {/* Theme Switcher Pills */}
-          <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md p-1.5 rounded-full border border-white/10">
+          <div className="flex items-center gap-2 bg-black/35 backdrop-blur-md p-1.5 rounded-full border border-white/10 max-w-full overflow-x-auto hide-scrollbar flex-wrap sm:flex-nowrap">
             {Object.entries(BANNER_THEMES).map(([key, theme]) => (
               <button
                 key={key}
@@ -258,7 +258,7 @@ export default function StudentProfileDossierPage() {
               {/* Avatar with Hover Upload */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="w-32 h-32 rounded-3xl border-4 border-[#1C1C24] bg-[#252530] shadow-2xl overflow-hidden relative group cursor-pointer flex items-center justify-center shrink-0"
+                className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl border-4 border-[#1C1C24] bg-[#252530] shadow-2xl overflow-hidden relative group cursor-pointer flex items-center justify-center shrink-0"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
@@ -302,7 +302,7 @@ export default function StudentProfileDossierPage() {
             {/* Save Button & Profile Completeness Meter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <div className="bg-[#13131A] border border-white/10 rounded-2xl px-4 py-3 min-w-[200px]">
-                <div className="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold mb-1.5 flex-wrap gap-2.5">
                   <span className="text-slate-400">Dossier Completeness</span>
                   <span className="text-emerald-400">{completenessPct}%</span>
                 </div>
@@ -325,7 +325,7 @@ export default function StudentProfileDossierPage() {
           </div>
 
           {/* Quick Verified Academic KPI Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-white/10">
+          <div className="grid grid-cols-2 gap-3 gap-4 pt-6 border-t border-white/10">
             <div className="bg-[#13131A] rounded-2xl p-4 border border-white/5">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                 Enrolled Subjects
@@ -619,7 +619,7 @@ export default function StudentProfileDossierPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Daily Self-Study Target (Hours / Day)
                   </label>
@@ -801,7 +801,7 @@ export default function StudentProfileDossierPage() {
       {activeTab === "TRANSCRIPT" && (
         <div className="space-y-6">
           <div className="bg-[#1C1C24] rounded-3xl border border-white/10 p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4 flex-wrap gap-2.5">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
                   Live PostgreSQL Ledger
@@ -863,7 +863,7 @@ export default function StudentProfileDossierPage() {
                     {transcript.recentQuizAttempts.map((att: any) => (
                       <div
                         key={att.id}
-                        className="p-3.5 rounded-xl bg-[#13131A] border border-white/5 flex items-center justify-between"
+                        className="p-3.5 rounded-xl bg-[#13131A] border border-white/5 flex items-center justify-between flex-wrap gap-2.5"
                       >
                         <div>
                           <p className="text-xs font-bold text-white">{att.quiz?.title}</p>
@@ -892,7 +892,7 @@ export default function StudentProfileDossierPage() {
                     {transcript.recentSubmissions.map((sub: any) => (
                       <div
                         key={sub.id}
-                        className="p-3.5 rounded-xl bg-[#13131A] border border-white/5 flex items-center justify-between"
+                        className="p-3.5 rounded-xl bg-[#13131A] border border-white/5 flex items-center justify-between flex-wrap gap-2.5"
                       >
                         <div>
                           <p className="text-xs font-bold text-white">{sub.assignment?.title}</p>
@@ -918,6 +918,24 @@ export default function StudentProfileDossierPage() {
           </div>
         </div>
       )}
-    </div>
+    
+      {/* MOBILE-FRIENDLY ACCOUNT SESSION BAR */}
+      <div className="mt-6 p-5 rounded-3xl border border-rose-500/20 bg-rose-500/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-center sm:text-left">
+          <p className="text-xs font-black uppercase tracking-widest text-rose-400">Account Session</p>
+          <p className="text-xs text-slate-400 mt-0.5">Signed in to GuruCool Phygital Workspace</p>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+            window.location.href = "/login";
+          }}
+          className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 transition-all"
+        >
+          Sign Out of GuruCool
+        </button>
+      </div>
+</div>
   );
 }

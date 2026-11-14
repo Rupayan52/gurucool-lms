@@ -184,7 +184,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       {/* MAIN CONTENT SHELL */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70 px-8 flex items-center justify-between shrink-0 z-20">
+        <header data-desktop-topbar="true" className="hidden lg:flex h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/70 px-8  items-center justify-between shrink-0 z-20">
           <div className="flex items-center gap-3">
             <span className="text-xs font-black uppercase tracking-widest text-slate-800">
               {activeNav.name}

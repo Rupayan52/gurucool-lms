@@ -77,6 +77,23 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
+  // Hide any residual desktop top bar (containing "Search courses & hubs...") on mobile
+  useEffect(() => {
+    if (!isMobileView) return;
+    const hideDesktopSearchToolbar = () => {
+      const inputs = document.querySelectorAll('input[placeholder*="Search courses"], input[placeholder*="Ctrl+G"]');
+      inputs.forEach(input => {
+        const bar = input.closest("header, div.border-b");
+        if (bar && bar instanceof HTMLElement) {
+          bar.style.display = "none";
+        }
+      });
+    };
+    hideDesktopSearchToolbar();
+    const timer = setTimeout(hideDesktopSearchToolbar, 150);
+    return () => clearTimeout(timer);
+  }, [isMobileView, pathname]);
+
   // Subtle tactile ripple on buttons
   useEffect(() => {
     const handlePointerDown = (e: PointerEvent) => {
@@ -146,6 +163,11 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     activeTabs.find(t => isTabActive(t))?.label ||
     (isTeacherRoute ? "Faculty Workspace" : "Student Workspace");
 
+  const handleToggleTheme = () => {
+    triggerTactileFeedback("LIGHT");
+    window.dispatchEvent(new CustomEvent("gc-toggle-theme"));
+  };
+
   return (
     <div className={showAppChrome ? "gc-mobile-shell-active" : ""}>
       {backToast && (
@@ -155,7 +177,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
         </div>
       )}
 
-      {/* SUBTLE, UNOBTRUSIVE MOBILE STATUS HEADER (NO BACK OR RELOAD BUTTONS) */}
+      {/* SINGLE NATIVE MOBILE HEADER STRIP */}
       {showAppChrome && (
         <header
           className={`gc-ios-topbar ${
@@ -168,16 +190,26 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
               alt="GuruCool"
               className="w-5 h-5 rounded-full object-cover"
             />
-            <span className="text-[11px] font-extrabold tracking-tight opacity-80">
-              GuruCool
-            </span>
+            <span className="text-xs font-black tracking-tight">GuruCool</span>
             <span className="opacity-30 text-xs">•</span>
-            <span className="text-[11px] font-bold opacity-65">{activeTitle}</span>
+            <span className="text-xs font-bold opacity-75">{activeTitle}</span>
           </div>
 
-          <span className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-500/10 opacity-70">
-            {isTeacherRoute ? "Faculty" : "Student"}
-          </span>
+          <div className="flex items-center gap-2">
+            {isStudentRoute && (
+              <button
+                type="button"
+                onClick={handleToggleTheme}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-500/15 hover:bg-slate-500/25 transition-colors"
+                aria-label="Toggle Theme"
+              >
+                ◐ Theme
+              </button>
+            )}
+            <span className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400">
+              {isTeacherRoute ? "Faculty" : "Student"}
+            </span>
+          </div>
         </header>
       )}
 
