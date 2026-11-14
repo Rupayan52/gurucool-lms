@@ -44,7 +44,7 @@ export async function GET() {
     const catalog = subjects.map(sub => ({
       id: sub.id,
       name: sub.name,
-      description: sub.description || `Comprehensive curriculum, live broadcasts, and assessments for ${sub.name}.`,
+      description: `Comprehensive curriculum, live broadcasts, and assessments for ${sub.name}.`,
       teachers: sub.teacherRegistrations.map(tr => tr.teacher),
       enrolledStudentsCount: sub.registrations.length,
       modulesCount: moduleCountMap[sub.id] || 0,

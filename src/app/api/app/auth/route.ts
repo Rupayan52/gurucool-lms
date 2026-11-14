@@ -88,10 +88,14 @@ export async function POST(req: Request) {
       }
 
       let isValidPassword = false;
-      if (user.password.startsWith("$2a$") || user.password.startsWith("$2b$") || user.password.startsWith("$2y$")) {
-        isValidPassword = await bcrypt.compare(password, user.password);
+      if (
+        user.passwordHash.startsWith("$2a$") ||
+        user.passwordHash.startsWith("$2b$") ||
+        user.passwordHash.startsWith("$2y$")
+      ) {
+        isValidPassword = await bcrypt.compare(password, user.passwordHash);
       } else {
-        isValidPassword = password === user.password;
+        isValidPassword = password === user.passwordHash;
       }
 
       if (!isValidPassword) {
@@ -172,7 +176,7 @@ export async function POST(req: Request) {
         data: {
           name,
           email,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           role
         }
       });
