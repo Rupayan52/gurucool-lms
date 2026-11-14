@@ -96,10 +96,10 @@ export default function CourseHubs() {
     <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
       <div className="mb-6 flex-shrink-0"><h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Hubs</h1></div>
 
-      <div className="flex gap-6 flex-1 min-h-0">
-        <div className="w-72 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2">
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+        <div className="w-full lg:w-72 flex-shrink-0 flex flex-row lg:flex-col gap-4 lg:gap-6 overflow-x-auto lg:overflow-x-visible overflow-y-hidden lg:overflow-y-auto pb-4 lg:pb-0 pr-2 hide-scrollbar">
           
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 min-w-[240px]">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Group Hubs</h3></div>
             <div className="p-2 space-y-1">
               {courses.map((c, idx) => (
@@ -110,7 +110,7 @@ export default function CourseHubs() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 min-w-[240px]">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Faculty 1-on-1</h3></div>
             <div className="p-2 space-y-1">
               {courses.map((c, idx) => (
@@ -123,7 +123,7 @@ export default function CourseHubs() {
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative">
+        <div className="flex-1 bg-white rounded-2xl lg:rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative min-h-[500px]">
           {!activeView ? (
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center"><h2 className="text-2xl font-black text-slate-800">Workspace Initialized</h2></div>
           ) : activeView.type === 'THREAD' && (!activeView.threadData || activeView.threadData.isLocked) ? (
