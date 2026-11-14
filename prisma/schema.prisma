@@ -406,3 +406,32 @@ model StudentProfile {
   bannerTheme       String   @default("INDIGO_CYBER")
   updatedAt         DateTime @updatedAt
 }
+
+model LiveClassSession {
+  id              String                @id @default(uuid())
+  subjectId       String
+  teacherId       String
+  moduleId        String?
+  title           String
+  agenda          String?
+  scheduledAt     DateTime
+  durationMinutes Int                   @default(60)
+  status          String                @default("SCHEDULED") // SCHEDULED, LIVE, COMPLETED
+  roomCode        String
+  streamUrl       String
+  recordingNotes  String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime              @default(now())
+  attendances     LiveClassAttendance[] @relation("SessionAttendances")
+}
+
+model LiveClassAttendance {
+  id        String           @id @default(uuid())
+  sessionId String
+  studentId String
+  joinedAt  DateTime         @default(now())
+  session   LiveClassSession @relation("SessionAttendances", fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+}

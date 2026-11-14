@@ -130,7 +130,7 @@ export default function FacultyExecutiveDashboard() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <Link
-              href="/teacher/curriculum"
+              href="/teacher/live-classes" className="px-6 py-3 rounded-full bg-gradient-to-r from-rose-500 to-orange-400 text-white font-bold text-xs shadow-md hover:opacity-95 transition-all">🔴 Host Live Class →</Link><Link href="/teacher/curriculum"
               className="px-6 py-3 rounded-full bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white font-bold text-xs shadow-[0_10px_25px_rgba(236,72,153,0.3)] transition-all"
             >
               Open Curriculum & Grading Studio →
