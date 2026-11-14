@@ -97,7 +97,7 @@ export default function ProfessionalTeacherProfile() {
       <div className="absolute top-24 right-4 w-72 h-72 bg-gradient-to-br from-pink-500 to-fuchsia-600 rounded-[40px] rotate-45 blur-[90px] opacity-30 -z-10 pointer-events-none"></div>
       <div className="absolute -bottom-28 right-36 w-96 h-96 bg-gradient-to-tr from-orange-400 to-pink-500 rounded-full blur-[100px] opacity-35 -z-10 pointer-events-none"></div>
 
-      <div className="max-w-6xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-10 max-w-6xl mx-auto pb-28 space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Faculty Profile</h1>
           <p className="text-sm font-medium text-slate-400 mt-1">
@@ -108,7 +108,7 @@ export default function ProfessionalTeacherProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* LEFT COLUMN: CRISP PORTRAIT & PERSONAL CREDENTIALS CARD */}
           <div className="lg:col-span-5">
-            <div className="bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden flex flex-col h-full">
+            <div className="bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden flex flex-col h-full rounded-2xl sm:rounded-[32px]">
               {/* Proportional Portrait Container */}
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -144,7 +144,7 @@ export default function ProfessionalTeacherProfile() {
 
               {/* Clean Underline Form Inputs */}
               <div className="p-8 flex-1 flex flex-col">
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
                   <div>
                     <h2 className="text-lg font-black text-slate-900">My profile</h2>
                     <p className="text-[11px] text-slate-400">Verified Faculty Account</p>
@@ -201,7 +201,7 @@ export default function ProfessionalTeacherProfile() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 flex items-center justify-between">
+                <div className="mt-auto pt-4 flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-bold text-orange-500">Live Profile Sync</span>
                     <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)]"></span>
@@ -222,8 +222,8 @@ export default function ProfessionalTeacherProfile() {
           {/* RIGHT COLUMN: STACKED ROSTER & CATALOG CARDS */}
           <div className="lg:col-span-7 flex flex-col gap-8">
             {/* TOP CARD: MY TEACHING ROSTER */}
-            <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 flex-1">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+            <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 flex-1 rounded-2xl sm:rounded-[32px]">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 flex-wrap gap-3">
                 <h3 className="text-lg font-black text-slate-900">My Teaching Roster</h3>
                 <span className="px-3.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                   {profile.teacherRegistrations.length} Active
@@ -239,7 +239,7 @@ export default function ProfessionalTeacherProfile() {
                   {profile.teacherRegistrations.map((tr: any) => (
                     <div
                       key={tr.subject.id}
-                      className="flex items-center justify-between py-2.5 px-3 rounded-2xl hover:bg-slate-50/80 transition-colors"
+                      className="flex items-center justify-between py-2.5 px-3 rounded-2xl hover:bg-slate-50/80 transition-colors flex-wrap gap-3"
                     >
                       <div>
                         <h4 className="text-sm font-bold text-slate-800">{tr.subject.name}</h4>
@@ -260,8 +260,8 @@ export default function ProfessionalTeacherProfile() {
             </div>
 
             {/* BOTTOM CARD: AVAILABLE SUBJECTS CATALOG */}
-            <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 flex-1">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+            <div className="bg-white rounded-[32px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-slate-100 flex-1 rounded-2xl sm:rounded-[32px]">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 flex-wrap gap-3">
                 <h3 className="text-lg font-black text-slate-900">Available Subjects Catalog</h3>
                 <span className="px-3.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                   {availableSubjects.length} Available
@@ -277,7 +277,7 @@ export default function ProfessionalTeacherProfile() {
                   {availableSubjects.map(sub => (
                     <div
                       key={sub.id}
-                      className="flex items-center justify-between py-2.5 px-3 rounded-2xl hover:bg-slate-50/80 transition-colors"
+                      className="flex items-center justify-between py-2.5 px-3 rounded-2xl hover:bg-slate-50/80 transition-colors flex-wrap gap-3"
                     >
                       <div className="flex items-center gap-3.5">
                         <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
@@ -302,8 +302,8 @@ export default function ProfessionalTeacherProfile() {
       {/* MODAL 1: ENROLLED STUDENT ROSTER */}
       {activeRoster && !activeStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden rounded-2xl sm:rounded-[32px]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-3">
               <div>
                 <h3 className="text-xl font-black text-slate-900">{activeRoster.name} Roster</h3>
                 <p className="text-xs text-slate-500 mt-1">{activeRoster.registrations?.length || 0} enrolled students</p>
@@ -324,7 +324,7 @@ export default function ProfessionalTeacherProfile() {
                   <div
                     key={reg.student.id}
                     onClick={() => setActiveStudent({ ...reg.student, subjectName: activeRoster.name })}
-                    className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-pink-300 hover:shadow-md cursor-pointer transition-all"
+                    className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-pink-300 hover:shadow-md cursor-pointer transition-all flex-wrap gap-3"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center font-black overflow-hidden">
@@ -353,7 +353,7 @@ export default function ProfessionalTeacherProfile() {
       {/* MODAL 2: STUDENT ACADEMIC OVERVIEW */}
       {activeStudent && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden rounded-2xl sm:rounded-[32px]">
             <div className="h-28 bg-gradient-to-r from-orange-400 to-pink-500 relative">
               <button
                 onClick={() => setActiveStudent(null)}
@@ -443,6 +443,28 @@ export default function ProfessionalTeacherProfile() {
           </div>
         </div>
       )}
-    </div>
+    
+      {/* FACULTY SESSION & QUICK SIGN OUT CARD */}
+      <div className="mt-6 p-5 rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 text-center sm:text-left">
+          <img src="/gurucool-logo.svg" alt="GnOvATech" className="w-11 h-11 rounded-2xl border border-slate-200 hidden sm:block" />
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Faculty Session Governance</p>
+            <h4 className="text-sm font-black text-slate-900">House of GnOvATech • Verified Educator Portal</h4>
+            <p className="text-xs text-slate-500">All roster updates and curriculum changes sync live to enrolled student apps.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try { sessionStorage.clear(); await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+            window.location.href = "/login";
+          }}
+          className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-md transition-all flex-shrink-0"
+        >
+          Sign Out of Faculty Portal
+        </button>
+      </div>
+</div>
   );
 }

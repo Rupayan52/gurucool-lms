@@ -93,11 +93,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-  if (!pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
-    response.headers.set("Cache-Control", "no-store, must-revalidate");
-  }
-  return applyHeaders(req, response);
+  return applyHeaders(req, NextResponse.next());
 }
 
 export const config = {
