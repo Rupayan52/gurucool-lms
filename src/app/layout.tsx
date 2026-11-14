@@ -1,3 +1,5 @@
+import MobileAppShell from "@/components/MobileAppShell";
+import "./mobile-ios.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -28,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full flex flex-col`}
         suppressHydrationWarning
       >
-        {children}
+        <MobileAppShell>{children}</MobileAppShell>
       </body>
     </html>
   );
