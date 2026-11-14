@@ -48,8 +48,8 @@ export default function FacultyLiveClassesCommandStudio() {
         setSubjects(subList);
         setModules(data.modules || []);
         setSessions(data.sessions || []);
-        if (subList.length > 0 && !selectedSubjectId) {
-          setSelectedSubjectId(subList[0].id);
+        if (subList.length > 0) {
+          setSelectedSubjectId(prev => prev ? prev : subList[0].id);
         }
       }
     } catch (e) {
