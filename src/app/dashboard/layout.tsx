@@ -169,7 +169,7 @@ export default function DashboardLayout({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1.8" /><line x1="9" y1="4" x2="9" y2="20" strokeWidth="1.8" /></svg>
           </button>
         </div>
-<a href="/dashboard/profile" className="mt-3 block w-full text-center py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all">View & Edit Full Profile →</a>
+
 
         {/* Search Bar */}
         <div ref={searchContainerRef} className="flex-1 max-w-xl mx-4 relative">
@@ -234,6 +234,10 @@ export default function DashboardLayout({
                   >
                     Sign out
                   </button>
+<a href="/dashboard/profile" className="block w-full text-center py-2 px-4 mt-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all">
+  View & Edit Full Profile
+</a>
+
                 </div>
 
                 {/* User Info Block */}
