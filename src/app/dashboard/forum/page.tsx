@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 
 export default function CourseHubs() {
   const [courses, setCourses] = useState<any[]>([]);
+  const [studentProfile, setStudentProfile] = useState<{ id?: string; name?: string; avatarUrl?: string | null } | null>(null);
   const [activeView, setActiveView] = useState<{ type: 'HUB' | 'THREAD', id: string, name: string, teacherId: string, teacherName: string, threadData?: any } | null>(null);
   
   const [messages, setMessages] = useState<any[]>([]);
@@ -21,7 +22,16 @@ export default function CourseHubs() {
   const [endReason, setEndReason] = useState("");
   const [ending, setEnding] = useState(false);
 
-  useEffect(() => { fetchCourses(); }, []);
+  useEffect(() => {
+    fetchCourses();
+    fetch("/api/student/profile", { cache: "no-store", headers: { "x-portal-role": "STUDENT" } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const u = d?.user || d;
+        if (u && (u.id || u.name)) setStudentProfile(u);
+      })
+      .catch(() => {});
+  }, []);
   
   useEffect(() => { 
     if (activeView?.type === 'HUB' || (activeView?.type === 'THREAD' && activeView.threadData && !activeView.threadData.isLocked && !activeView.threadData.isClosed)) {
@@ -55,7 +65,11 @@ export default function CourseHubs() {
     const payload = { content: messageText, fileUrl, fileName, fileType, ...(activeView.type === 'HUB' ? { subjectId: activeView.id, requestedTeacherId: activeView.teacherId } : { threadId: activeView.threadData.id }) };
     setMessageText(""); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = "";
     
-    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-portal-role": "STUDENT" },
+      body: JSON.stringify({ ...payload, senderRole: "STUDENT", expectedStudentId: studentProfile?.id })
+    });
     if (res.ok) { const newMsg = await res.json(); setMessages(prev => [...prev, newMsg]); }
   };
 

@@ -47,6 +47,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const portalRoleHeader = req.headers.get("x-portal-role");
   try {
     const auth = await verifySecureSession();
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { content, subjectId, threadId, requestedTeacherId, fileUrl, fileName, fileType } =
+    const { content, subjectId, threadId, requestedTeacherId, fileUrl, fileName, fileType , expectedStudentId } =
       await req.json();
 
     const safeContent = content ? censorText(String(content)) : "";
@@ -94,7 +95,8 @@ export async function POST(req: Request) {
       ? auth.userId
       : requestedTeacherId;
 
-    const msg = await prisma.message.create({
+    const msg = const verifiedSenderId = (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "") ? expectedStudentId : user.id;
+    await prisma.message.create({
       data: {
         content: safeContent,
         fileUrl: fileUrl || null,
