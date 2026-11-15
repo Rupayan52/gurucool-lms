@@ -22,15 +22,7 @@ button:active, a:active, [role="button"]:active {
     -webkit-overflow-scrolling: touch !important;
   }
 
-  div.h-screen:not(.fixed),
-  div.max-h-screen:not(.fixed),
-  main.overflow-y-auto,
-  main.overflow-hidden,
-  main.h-full {
-    height: auto !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-  }
+  
 
   aside,
   [data-desktop-topbar="true"],

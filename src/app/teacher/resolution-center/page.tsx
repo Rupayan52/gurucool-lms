@@ -103,15 +103,15 @@ export default function ResolutionCenterPage() {
   if (!profile) return <div className="flex justify-center items-center h-full"><div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div></div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col animate-in fade-in duration-500 relative">
+    <div className="p-3 lg:p-8 max-w-7xl mx-auto h-[calc(100vh-64px)] flex flex-col">
       <div className="mb-6 flex-shrink-0">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Resolution Center</h1>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-        <div className="w-full lg:w-72 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2 max-h-[320px] lg:max-h-none overflow-y-auto">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-h-0">
+        <div className="w-full lg:w-[280px] flex-shrink-0 flex flex-row lg:flex-col gap-3 lg:gap-6 overflow-x-auto lg:overflow-x-visible overflow-y-hidden lg:overflow-y-auto pb-2 lg:pb-0 pr-0 lg:pr-2 hide-scrollbar">
           
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 min-w-[240px]">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Group Hubs</h3></div>
             <div className="p-2 space-y-1">
               {hubs.map(hub => (
@@ -122,7 +122,7 @@ export default function ResolutionCenterPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 min-w-[240px]">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100"><h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Student 1-on-1 Requests</h3></div>
             <div className="p-2 space-y-1">
               {threads.map(thread => (
@@ -138,7 +138,7 @@ export default function ResolutionCenterPage() {
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-2xl lg:rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative min-h-[480px]">
+        <div className="flex-1 bg-white rounded-2xl lg:rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative">
           {!activeView ? (
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center"><h2 className="text-2xl font-black text-slate-800">Workspace Initialized</h2></div>
           ) : activeView.type === 'THREAD' && activeView.threadData?.isLocked ? (
