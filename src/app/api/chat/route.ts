@@ -95,8 +95,8 @@ export async function POST(req: Request) {
       ? auth.userId
       : requestedTeacherId;
 
-    const msg = const verifiedSenderId = (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "") ? expectedStudentId : user.id;
-    await prisma.message.create({
+    const verifiedSenderId = (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "") ? expectedStudentId : user.id;
+    const msg = await prisma.message.create({
       data: {
         content: safeContent,
         fileUrl: fileUrl || null,
