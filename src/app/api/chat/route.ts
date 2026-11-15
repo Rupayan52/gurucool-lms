@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       const cohortTeacherId =
         auth.role === "TEACHER" || auth.role === "FACULTY"
           ? auth.userId
-          : requestedTeacherId;
+          : (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "" ? expectedStudentId : requestedTeacherId);
       where = { subjectId, hubTeacherId: cohortTeacherId, threadId: null };
     }
 
@@ -93,16 +93,16 @@ export async function POST(req: Request) {
       ? null
       : auth.role === "TEACHER" || auth.role === "FACULTY"
       ? auth.userId
-      : requestedTeacherId;
+      : (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "" ? expectedStudentId : requestedTeacherId);
 
-    const verifiedSenderId = (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "") ? expectedStudentId : user.id;
+    const verifiedSenderId = (typeof expectedStudentId === "string" && expectedStudentId.trim() !== "") ? expectedStudentId : (auth);
     const msg = await prisma.message.create({
       data: {
         content: safeContent,
         fileUrl: fileUrl || null,
         fileName: fileName || null,
         fileType: fileType || null,
-        senderId: auth.userId,
+        senderId: verifiedSenderId,
         subjectId: subjectId || null,
         hubTeacherId,
         threadId: threadId || null
