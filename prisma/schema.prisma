@@ -456,3 +456,13 @@ model SecurityAuditLog {
   metadata  String?
   createdAt DateTime @default(now())
 }
+
+model AiDoubtResolution {
+   id          String   @id @default(cuid())
+   studentId   String
+   subjectId   String?
+   question    String   @db.Text
+   aiAnswer    String   @db.Text
+   status      String   @default("RESOLVED_BY_AI") // RESOLVED_BY_AI or ESCALATED_TO_FACULTY
+   createdAt   DateTime @default(now())
+}
