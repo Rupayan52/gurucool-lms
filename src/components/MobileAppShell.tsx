@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 
 interface NavItem {
@@ -640,7 +641,18 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
         </div>
       )}
 
-      <div className="gc-fast-viewport">{children}</div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={transitionKey}
+          initial={{ opacity: 0, y: 12, scale: 0.99 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, scale: 0.99 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="gc-fast-viewport"
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
 
       {showAppChrome && (
         <nav

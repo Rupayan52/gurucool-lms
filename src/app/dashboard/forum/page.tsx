@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/EmptyState";
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 
@@ -139,7 +140,12 @@ export default function CourseHubs() {
 
         <div className="flex-1 bg-white rounded-2xl lg:rounded-[32px] border border-slate-200 shadow-sm flex flex-col overflow-hidden relative min-h-[500px]">
           {!activeView ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center"><h2 className="text-2xl font-black text-slate-800">Workspace Initialized</h2></div>
+            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-10 bg-slate-50 dark:bg-slate-950/30">
+        <EmptyState 
+          title="Workspace Initialized" 
+          description="Select a Group Hub or Faculty 1-on-1 thread from the roster above to begin communicating." 
+        />
+      </div>
           ) : activeView.type === 'THREAD' && (!activeView.threadData || activeView.threadData.isLocked) ? (
             
             <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
