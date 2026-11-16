@@ -226,3 +226,37 @@ html[data-gc-theme="dark"] .gc-mobile-shell-active .text-slate-800:not([class*="
 html[data-gc-theme="dark"] .gc-mobile-shell-active .text-slate-700:not([class*="bg-white"] *) {
   color: #F1F5F9 !important;
 }
+
+/* ==========================================================================
+   PHASE 4 UI/UX LUXURY GLASSMORPHISM & GLOW SYSTEM
+   ========================================================================== */
+.gc-glass-card {
+  background: rgba(21, 28, 44, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+html[data-gc-theme="light"] .gc-glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06);
+}
+
+.gc-glow-accent {
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+}
+
+@keyframes gcSkeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.gc-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: gcSkeletonShimmer 1.6s infinite linear;
+}
