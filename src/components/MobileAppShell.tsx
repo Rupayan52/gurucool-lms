@@ -643,7 +643,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={transitionKey}
+          key={pathname}
           initial={{ opacity: 0, y: 12, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -12, scale: 0.99 }}
