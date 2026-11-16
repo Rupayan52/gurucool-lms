@@ -167,3 +167,62 @@ button:active, a:active, [role="button"]:active {
 
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ==========================================================================
+   UNIVERSAL LIGHT / DARK THEME ENGINE (data-gc-theme="light" | "dark")
+   ========================================================================== */
+html[data-gc-theme="light"] body,
+html[data-gc-theme="light"] .gc-mobile-shell-active,
+html[data-gc-theme="light"] .gc-fast-viewport > div,
+html[data-gc-theme="light"] main {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+/* Convert hardcoded dark cards on Student Profile, Live Player, Doubts, etc. when Light Mode is active */
+html[data-gc-theme="light"] .gc-mobile-shell-active [class*="bg-[#0"],
+html[data-gc-theme="light"] .gc-mobile-shell-active [class*="bg-[#1"],
+html[data-gc-theme="light"] .gc-mobile-shell-active .bg-slate-950,
+html[data-gc-theme="light"] .gc-mobile-shell-active .bg-slate-900,
+html[data-gc-theme="light"] .gc-mobile-shell-active .bg-gray-900 {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+}
+
+html[data-gc-theme="light"] .gc-mobile-shell-active .text-white:not(button):not([class*="bg-indigo-"]):not([class*="bg-blue-"]):not([class*="bg-rose-"]):not([class*="bg-emerald-"]):not([class*="bg-pink-"]) {
+  color: #0F172A !important;
+}
+
+html[data-gc-theme="light"] .gc-mobile-shell-active .text-slate-300,
+html[data-gc-theme="light"] .gc-mobile-shell-active .text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Convert light pages/cards when Dark Mode is active */
+html[data-gc-theme="dark"] body,
+html[data-gc-theme="dark"] .gc-mobile-shell-active,
+html[data-gc-theme="dark"] .gc-fast-viewport > div,
+html[data-gc-theme="dark"] main {
+  background-color: #0B0F19 !important;
+  color: #F8FAFC !important;
+}
+
+html[data-gc-theme="dark"] .gc-mobile-shell-active .bg-\[\#F8FAFC\],
+html[data-gc-theme="dark"] .gc-mobile-shell-active .bg-slate-50 {
+  background-color: #0F1523 !important;
+  color: #F1F5F9 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-gc-theme="dark"] .gc-mobile-shell-active .bg-white:not([class*="fixed"]) {
+  background-color: #151C2C !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+html[data-gc-theme="dark"] .gc-mobile-shell-active .text-slate-900:not([class*="bg-white"] *),
+html[data-gc-theme="dark"] .gc-mobile-shell-active .text-slate-800:not([class*="bg-white"] *),
+html[data-gc-theme="dark"] .gc-mobile-shell-active .text-slate-700:not([class*="bg-white"] *) {
+  color: #F1F5F9 !important;
+}

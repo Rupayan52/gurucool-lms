@@ -57,6 +57,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
   const [presence, setPresence] = useState<"Available" | "Busy" | "Offline">("Available");
   const [studentUser, setStudentUser] = useState<UserSummary | null>(null);
   const [facultyUser, setFacultyUser] = useState<UserSummary | null>(null);
+  const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
   const [backToast, setBackToast] = useState<string | null>(null);
   const lastBackPressRef = useRef<number>(0);
 
@@ -65,15 +66,68 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
   const activeRole: "FACULTY" | "STUDENT" = isTeacherRoute ? "FACULTY" : "STUDENT";
   const showAppChrome = isMobileView && (isTeacherRoute || isStudentRoute);
 
-  // 1. Role-Scoped Fast SWR Cache (Never mixes Student and Faculty API responses!)
+  // 1. Initialize & Apply Universal Theme Engine ("dark" | "light")
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedTheme = localStorage.getItem("gc_theme_mode") as "dark" | "light" | null;
+    const defaultTheme = savedTheme || (isTeacherRoute ? "light" : "dark");
+    setThemeMode(defaultTheme);
+    document.documentElement.setAttribute("data-gc-theme", defaultTheme);
+    if (defaultTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isTeacherRoute]);
+
+  const applyThemeMode = (nextTheme: "dark" | "light") => {
+    setThemeMode(nextTheme);
+    try {
+      localStorage.setItem("gc_theme_mode", nextTheme);
+    } catch {}
+
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-gc-theme", nextTheme);
+      if (nextTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+
+      // Also click the hidden desktop Light/Dark toggle button if present so React layout state stays synced
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const desktopToggle = buttons.find(btn => {
+        const txt = (btn.textContent || "").trim();
+        return txt === "Light" || txt === "Dark";
+      });
+      if (desktopToggle) {
+        const btnText = (desktopToggle.textContent || "").trim().toLowerCase();
+        // In dashboard layout, button label shows current or target mode; click it to sync
+        if (
+          (nextTheme === "light" && btnText === "light") ||
+          (nextTheme === "dark" && btnText === "dark") ||
+          btnText === "light" ||
+          btnText === "dark"
+        ) {
+          try {
+            desktopToggle.click();
+          } catch {}
+        }
+      }
+    }
+    window.dispatchEvent(new CustomEvent("gc-toggle-theme", { detail: { theme: nextTheme } }));
+  };
+
+  const handleToggleTheme = () => {
+    triggerHaptic("LIGHT");
+    const nextTheme = themeMode === "dark" ? "light" : "dark";
+    applyThemeMode(nextTheme);
+  };
+
+  // 2. Role-Scoped Fast SWR Cache
   useEffect(() => {
     if (typeof window === "undefined" || (window as any).__gcRoleScopedFetchInstalled) return;
     (window as any).__gcRoleScopedFetchInstalled = true;
-
-    // Purge any legacy un-scoped cache key that caused the R avatar to stick on Faculty
-    try {
-      sessionStorage.removeItem("gc_user_summary");
-    } catch {}
 
     const nativeFetch = window.fetch.bind(window);
     const memCache = new Map<string, { body: string; status: number; headers: [string, string][]; ts: number }>();
@@ -83,9 +137,12 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
       const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
       const currentPath = window.location.pathname || "/";
-      const roleScope = currentPath.startsWith("/teacher") ? "FACULTY" : currentPath.startsWith("/dashboard") ? "STUDENT" : "PUBLIC";
+      const roleScope = currentPath.startsWith("/teacher")
+        ? "FACULTY"
+        : currentPath.startsWith("/dashboard")
+        ? "STUDENT"
+        : "PUBLIC";
 
-      // Never cache auth/profile/chat mutations or login/logout calls
       const isUncachedEndpoint =
         method !== "GET" ||
         !url.startsWith("/api/") ||
@@ -134,7 +191,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     };
   }, []);
 
-  // 2. Detect Mobile Viewport
+  // 3. Detect Mobile Viewport
   useEffect(() => {
     const checkViewport = () => {
       const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
@@ -157,7 +214,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
-  // 3. Prefetch routes for active portal
+  // 4. Prefetch routes
   useEffect(() => {
     if (!showAppChrome) return;
     const tabs = isTeacherRoute ? TEACHER_TABS : STUDENT_TABS;
@@ -168,7 +225,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     });
   }, [showAppChrome, isTeacherRoute, router]);
 
-  // 4. Strictly Fetch & Separate Faculty Profile vs Student Profile
+  // 5. Load Active Portal User Identity
   useEffect(() => {
     if (!showAppChrome) return;
     let cancelled = false;
@@ -176,7 +233,6 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     const loadActivePortalUser = async () => {
       try {
         if (isTeacherRoute) {
-          // 1. Try teacher profile endpoint first with no-store
           const res = await fetch(`/api/teacher/profile?t=${Date.now()}`, {
             cache: "no-store",
             headers: { "x-portal-role": "FACULTY" }
@@ -184,7 +240,6 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
           if (res.ok) {
             const data = await res.json();
             const u = data?.teacher || data?.user || data;
-            // Verify it's actually a teacher/faculty record or extract name/email
             if (u && (u.name || u.email)) {
               if (!cancelled) {
                 setFacultyUser({
@@ -198,8 +253,6 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
               return;
             }
           }
-
-          // 2. Fallback: inspect /api/auth/me ONLY if its role is TEACHER/FACULTY
           const meRes = await fetch(`/api/auth/me?t=${Date.now()}`, { cache: "no-store" });
           if (meRes.ok) {
             const meData = await meRes.json();
@@ -214,18 +267,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
                   avatarUrl: u.avatarUrl || null
                 });
               }
-              return;
             }
-          }
-
-          // 3. Fallback: read teacher name from rendered DOM if available
-          const domTeacherName = document.querySelector("[data-teacher-name]")?.getAttribute("data-teacher-name");
-          if (domTeacherName && !cancelled) {
-            setFacultyUser({
-              name: domTeacherName,
-              email: "faculty@gurucool.edu",
-              role: "FACULTY"
-            });
           }
         } else if (isStudentRoute) {
           const res = await fetch(`/api/student/profile?t=${Date.now()}`, {
@@ -248,7 +290,6 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
               return;
             }
           }
-
           const meRes = await fetch(`/api/auth/me?t=${Date.now()}`, { cache: "no-store" });
           if (meRes.ok) {
             const meData = await meRes.json();
@@ -275,7 +316,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     };
   }, [showAppChrome, isTeacherRoute, isStudentRoute, pathname]);
 
-  // 5. Hide duplicate desktop search bar on mobile
+  // 6. Hide duplicate desktop search bar visually on mobile (keep in DOM for theme sync)
   useEffect(() => {
     if (!isMobileView) return;
     const inputs = document.querySelectorAll('input[placeholder*="Search courses"], input[placeholder*="Ctrl+G"]');
@@ -289,24 +330,44 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     setProfileMenuOpen(false);
   }, [pathname]);
 
-  // 6. Hardware Back Button Guard
+  // 7. Hardware Back Button Guard:
+  //    - On /login, /register, /privacy-policy, /terms-of-service, /contact-support -> ALWAYS go back to "/" (Landing Page)!
+  //    - On inner /dashboard/* or /teacher/* tabs -> go back to "/dashboard" or "/teacher"
+  //    - Only on "/" or "/dashboard" or "/teacher" -> show double-back toast before minimizing app
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.history.pushState({ gcBackGuard: true, path: pathname }, "", window.location.href);
 
     const handlePopState = () => {
+      triggerHaptic("MEDIUM");
+
       if (profileMenuOpen) {
         setProfileMenuOpen(false);
         window.history.pushState({ gcBackGuard: true }, "", window.location.href);
         return;
       }
 
-      const rootPath = isTeacherRoute ? "/teacher" : isStudentRoute ? "/dashboard" : "/";
-      if (pathname !== rootPath && (isTeacherRoute || isStudentRoute)) {
-        router.push(rootPath);
+      // If user is on Login, Register, or Legal pages, Back ALWAYS routes to the Landing Page ("/")
+      const isPublicSubpage =
+        pathname === "/login" ||
+        pathname === "/register" ||
+        pathname.startsWith("/privacy-policy") ||
+        pathname.startsWith("/terms-of-service") ||
+        pathname.startsWith("/contact-support");
+
+      if (isPublicSubpage) {
+        router.push("/");
         return;
       }
 
+      // If user is on an inner Student or Faculty tab, Back routes to their main dashboard
+      const portalRoot = isTeacherRoute ? "/teacher" : isStudentRoute ? "/dashboard" : "/";
+      if (pathname !== portalRoot && (isTeacherRoute || isStudentRoute)) {
+        router.push(portalRoot);
+        return;
+      }
+
+      // Otherwise user is at "/" or "/dashboard" or "/teacher" root
       const now = Date.now();
       if (now - lastBackPressRef.current < 2200) return;
 
@@ -329,18 +390,12 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
     activeTabs.find(t => isTabActive(t))?.label ||
     (isTeacherRoute ? "Faculty Workspace" : "Student Workspace");
 
-  // Strictly pick the user matching the active route's role!
   const currentUser = isTeacherRoute ? facultyUser : studentUser;
   const displayName = currentUser?.name || (isTeacherRoute ? "Faculty Educator" : "Student");
   const displayEmail =
     currentUser?.email || (isTeacherRoute ? "faculty@gurucool.edu" : "student@gurucool.edu");
   const avatarInitial = displayName.trim().charAt(0).toUpperCase() || (isTeacherRoute ? "F" : "S");
   const profilePath = isTeacherRoute ? "/teacher/profile" : "/dashboard/profile";
-
-  const handleToggleTheme = () => {
-    triggerHaptic("LIGHT");
-    window.dispatchEvent(new CustomEvent("gc-toggle-theme"));
-  };
 
   const handleSignOut = async () => {
     triggerHaptic("MEDIUM");
@@ -350,7 +405,8 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
       setFacultyUser(null);
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {}
-    window.location.href = "/login";
+    // Push "/" then "/login" using Next router so "/" is always in history behind "/login"
+    router.push("/login");
   };
 
   const presenceDotColor =
@@ -360,8 +416,10 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
       ? "bg-amber-400"
       : "bg-slate-400";
 
+  const isDarkTheme = themeMode === "dark";
+
   return (
-    <div className={showAppChrome ? "gc-mobile-shell-active" : ""}>
+    <div className={`${showAppChrome ? "gc-mobile-shell-active" : ""} gc-theme-${themeMode}`}>
       {backToast && (
         <div className="gc-back-toast">
           <img src="/gurucool-logo.svg" alt="GuruCool" className="w-4 h-4 rounded-full" />
@@ -369,11 +427,26 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
         </div>
       )}
 
-      {/* BROADENED 64PX NATIVE HEADER WITH ROLE-ACCURATE PROFILE AVATAR */}
+      {/* FLOATING "← BACK TO HOME" PILL ON /login AND /register */}
+      {(pathname === "/login" || pathname === "/register") && (
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic("LIGHT");
+            router.push("/");
+          }}
+          className="fixed top-4 left-4 z-[9000] inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 text-xs font-bold shadow-lg backdrop-blur-md transition-all"
+        >
+          <span>←</span>
+          <span>Back to Home</span>
+        </button>
+      )}
+
+      {/* BROADENED 64PX NATIVE HEADER WITH WORKING THEME SWITCHER & PROFILE AVATAR */}
       {showAppChrome && (
         <header
           className={`gc-ios-topbar ${
-            isTeacherRoute ? "gc-ios-topbar-light" : "gc-ios-topbar-dark"
+            isDarkTheme ? "gc-ios-topbar-dark" : "gc-ios-topbar-light"
           }`}
         >
           <div
@@ -396,8 +469,8 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
                 <span
                   className={`text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
                     isTeacherRoute
-                      ? "bg-pink-500/15 text-pink-600"
-                      : "bg-indigo-500/15 text-indigo-300"
+                      ? "bg-pink-500/15 text-pink-500"
+                      : "bg-indigo-500/15 text-indigo-400"
                   }`}
                 >
                   {activeRole}
@@ -409,20 +482,23 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            {isStudentRoute && (
-              <button
-                type="button"
-                onClick={handleToggleTheme}
-                className="h-9 px-3 rounded-xl bg-slate-500/15 hover:bg-slate-500/25 text-[11px] font-extrabold flex items-center gap-1.5 transition-colors"
-                aria-label="Toggle Theme"
-              >
-                <span>◐</span>
-                <span className="hidden xs:inline">Theme</span>
-              </button>
-            )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Working Light / Dark Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              className={`h-9 px-3 rounded-xl text-[11px] font-extrabold flex items-center gap-1.5 border transition-all ${
+                isDarkTheme
+                  ? "bg-slate-800/90 text-amber-300 border-slate-700"
+                  : "bg-slate-100 text-slate-800 border-slate-200"
+              }`}
+              aria-label="Toggle Light or Dark Mode"
+            >
+              <span>{isDarkTheme ? "☀️" : "🌙"}</span>
+              <span className="hidden xs:inline">{isDarkTheme ? "Light" : "Dark"}</span>
+            </button>
 
-            {/* Role-Accurate Profile Pill (Student vs Faculty) */}
+            {/* Role-Accurate Profile Pill */}
             <button
               type="button"
               onClick={() => {
@@ -569,7 +645,7 @@ export default function MobileAppShell({ children }: { children: React.ReactNode
       {showAppChrome && (
         <nav
           className={`gc-ios-tabbar ${
-            isTeacherRoute ? "gc-ios-tabbar-light" : "gc-ios-tabbar-dark"
+            isDarkTheme ? "gc-ios-tabbar-dark" : "gc-ios-tabbar-light"
           }`}
         >
           {activeTabs.map(tab => {
