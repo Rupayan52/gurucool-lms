@@ -260,3 +260,15 @@ html[data-gc-theme="light"] .gc-glass-card {
   background-size: 200% 100%;
   animation: gcSkeletonShimmer 1.6s infinite linear;
 }
+
+/* ==========================================================================
+   FORCE HIDE DESKTOP TOPBAR ON MOBILE (Framer Motion Safe)
+   ========================================================================== */
+html[data-mobile-app="true"] .gc-fast-viewport header:has(input[placeholder*="Search"]),
+html[data-mobile-app="true"] .gc-fast-viewport div.border-b:has(input[placeholder*="Search"]) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
