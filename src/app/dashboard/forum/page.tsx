@@ -1,5 +1,5 @@
-import { EmptyState } from "@/components/ui/EmptyState";
 "use client";
+import { EmptyState } from "@/components/ui/EmptyState";
 import React, { useEffect, useState, useRef } from "react";
 
 export default function CourseHubs() {
